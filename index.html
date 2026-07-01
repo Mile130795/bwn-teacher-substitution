@@ -784,9 +784,17 @@ const App = {
     if (cached) { try { this.state.settings = JSON.parse(cached); this.applySettings(); this.setDefaultDates(); } catch(e) {} }
     // เริ่ม fetch settings ก่อน (non-blocking) แล้วค่อยแสดง dashboard
     // goPubHome → navTo('home') → loadHome() จะ fire getSubstitutes พร้อมกันเลย
-    const settingsPromise = this.api({ action:'getSettings' });
+    // เก็บเป็น this._settingsReady ให้ loadHome() รอได้ (กัน race condition ที่ enableAck/enableExportImage
+    // ยังไม่มาตอน loadHome() render ครั้งแรก ทำให้หน้า public/หลัง login แสดงผลไม่ตรงกัน)
+    this._settingsReady = this.api({ action:'getSettings' }).then(r => {
+      if (r.ok) {
+        this.state.settings = r.settings;
+        sessionStorage.setItem('settings_cache', JSON.stringify(r.settings));
+      }
+      return r;
+    });
     if (t && this.state.uid) { this.goHome(); this._initSessionTimeout(); }
-    else this.goPubHome();  // ← loadHome() เริ่มทำงานที่นี่ (parallel กับ settingsPromise)
+    else this.goPubHome();  // ← loadHome() เริ่มทำงานที่นี่ (parallel กับ _settingsReady)
     // โหลด public stats สำหรับหน้า login (ไม่ต้อง token)
     this.api({ action:'getPublicStats' }).then(ps => {
       if (ps.ok) {
@@ -796,10 +804,8 @@ const App = {
         if (ms) ms.textContent = ps.monthSubCount;
       }
     });
-    const r = await settingsPromise;
+    const r = await this._settingsReady;
     if (!r.ok) { if (!cached) this.toast('ไม่สามารถเชื่อมต่อ GAS: ' + r.err, 'error'); return; }
-    this.state.settings = r.settings;
-    sessionStorage.setItem('settings_cache', JSON.stringify(r.settings));
     this.applySettings();
     this.setDefaultDates();
   },
@@ -1082,6 +1088,7 @@ const App = {
     const body = document.getElementById('home-body');
     body.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-3);font-size:13px;">🔄 กำลังโหลดข้อมูล...</div>`;
     const r = await this.api({ action:'getSubstitutes', date, _t: Date.now() });
+    if (this._settingsReady) await this._settingsReady; // กันหน้า public แสดงผลไม่ครบเพราะ settings ยังมาไม่ถึง
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
     const subs = r.substitutes || [];
     const s    = this.state.settings;
@@ -1112,13 +1119,13 @@ const App = {
           </div>
         </div>
         <div style="overflow-x:auto;"><table class="tbl">
-          <thead><tr><th>คาบ</th><th>รหัสวิชา</th><th>ห้องเรียน</th><th>ห้อง/อาคาร</th><th>ครูสอนแทน</th>${s.enableAck?'<th>รับทราบ</th>':''}</tr></thead>
+          <thead><tr><th>คาบ</th><th>รหัสวิชา</th><th>ระดับชั้น</th><th>ห้อง</th><th>ครูสอนแทน</th>${s.enableAck?'<th>รับทราบ</th>':''}</tr></thead>
           <tbody>`;
       g.rows.sort((a,b)=>a.period-b.period).forEach(sub => {
         const noSub = !sub.subId || sub.subId === 'ไม่จัดสอนแทน';
         const subCell = noSub ? `<span style="color:var(--text-3);font-size:13px;">ไม่จัดสอนแทน</span>` : `<span style="font-weight:600;">${sub.subName}</span>`;
         const badge = noSub ? `<span class="badge badge-nosub">—</span>` : sub.acknowledged ? `<span class="badge badge-ack">✔ รับทราบ</span>` : `<button onclick="App.openLoginForAck()" class="badge badge-pending" style="cursor:pointer;border:none;font-size:inherit;font-family:inherit;" title="คลิกเพื่อเข้าสู่ระบบและรับทราบ">⏳ รอรับทราบ</button>`;
-        html += `<tr><td><div class="period-circle">${sub.period}</div></td><td><span style="font-weight:600;">${sub.subjectCode||'—'}</span></td><td>${sub.room||'—'}</td><td>${sub.classroom?`ห้อง ${sub.classroom}`:''}${sub.building?` อาคาร ${sub.building}`:''}</td><td>${subCell}</td>${s.enableAck?`<td>${badge}</td>`:''}</tr>`;
+        html += `<tr><td><div class="period-circle">${sub.period}</div></td><td><span style="font-weight:600;">${sub.subjectCode||'—'}</span></td><td>${sub.room||'—'}</td><td>${sub.classroom||'—'}</td><td style="white-space:nowrap;">${subCell}</td>${s.enableAck?`<td style="white-space:nowrap;">${badge}</td>`:''}</tr>`;
       });
       html += `</tbody></table></div></div>`;
     });
@@ -1160,8 +1167,8 @@ const App = {
             <tr style="background:${pal.accent};">
               <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:center;width:60px;">คาบ</th>
               <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">รหัสวิชา</th>
-              <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">ระดับชั้น/ห้อง</th>
-              <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">ห้องเรียน</th>
+              <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">ระดับชั้น</th>
+              <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">ห้อง</th>
               <th style="padding:10px 14px;color:#fff;font-weight:700;text-align:left;">ครูสอนแทน</th>
             </tr>
           </thead>
@@ -1400,7 +1407,7 @@ const App = {
       <p style="font-size:13px;color:var(--text-2);font-weight:500;margin:0;">ทั้งหมด ${subs.length} คาบ · รอรับทราบ <b style="color:var(--warn);">${pending.length}</b> คาบ</p>
       ${ackBtn}
     </div>`;
-    html += `<div class="card"><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ห้องเรียน</th><th>ครูที่ไม่อยู่</th><th>สถานะ</th></tr></thead><tbody>`;
+    html += `<div class="card"><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ระดับชั้น</th><th>ครูที่ไม่อยู่</th><th>สถานะ</th></tr></thead><tbody>`;
     subs.forEach(s => {
       const badge = s.acknowledged
         ? `<span class="badge badge-ack">✔ รับทราบ</span>`
@@ -1473,7 +1480,7 @@ const App = {
     });
     html += `<div class="card" style="overflow:hidden;">
       <div class="card-header"><h4 style="font-size:14px;font-weight:700;color:var(--text-1);margin:0;">รายการทั้งหมด (${subs.length} คาบ)</h4></div>
-      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ห้อง</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>สถานะ</th></tr></thead><tbody>`;
+      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ระดับชั้น</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>สถานะ</th></tr></thead><tbody>`;
     sorted.forEach(s => {
       const badge = s.acknowledged
         ? `<span class="badge badge-ack">✔ รับทราบ</span>`
@@ -1535,7 +1542,7 @@ const App = {
       </div>
       <div id="assign-existing-export" style="overflow-x:auto;">
       <table class="tbl"><thead><tr>
-        <th>คาบ</th><th>วิชา</th><th>ห้องเรียน</th><th>ห้อง</th><th>ครูสอนแทน</th><th>สถานะ</th><th>แก้ไข</th>
+        <th>คาบ</th><th>วิชา</th><th>ระดับชั้น</th><th>ห้อง</th><th>ครูสอนแทน</th><th>สถานะ</th><th>แก้ไข</th>
       </tr></thead><tbody>`;
     groupArr.forEach(g => {
       const activeRows = g.rows.filter(r => r.status !== 'Cancelled');
@@ -1569,7 +1576,7 @@ const App = {
           : s.acknowledged ? `<span class="badge badge-ack">✔ รับทราบ</span>`
           : `<span class="badge badge-pending">⏳ รอ</span>`;
         const editBtn = !cancelled
-          ? `<button onclick="App.quickEditSub(${s.rowId},'${s.subId||''}','${g.absentName}',${s.period},'${s.subjectCode||''}','${s.room||''}')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 9px;" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`
+          ? `<button onclick="App.quickEditSub(${s.rowId},'${s.subId||''}','${g.absentName}',${s.period},'${s.subjectCode||''}','${s.room||''}','${g.absentId}','${s.building||''}')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 9px;" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`
           : '';
         const rowStyle = cancelled ? ' style="opacity:.45;"' : '';
         html += `<tr${rowStyle}>
@@ -1588,17 +1595,36 @@ const App = {
     el.style.display = '';
   },
 
-  async quickEditSub(rowId, currentSubId, absentName, period, subjectCode, room) {
+  async quickEditSub(rowId, currentSubId, absentName, period, subjectCode, room, absentId, building) {
     await this.loadTeacherCache();
-    const normalized = (!currentSubId || currentSubId === 'ไม่จัดสอนแทน') ? 'NO_SUB' : currentSubId;
-    const absentTodayIds = this.state.absentTodayIds || new Set();
-    const sorted = [...this.state.teachers]
-      .filter(t => !absentTodayIds.has(t.id.toUpperCase()))
-      .sort((a,b) => a.fullName.localeCompare(b.fullName,'th'));
-    const opts = [
-      `<option value="NO_SUB" ${normalized==='NO_SUB'?'selected':''}>— ไม่จัดสอนแทนคาบนี้ —</option>`,
-      ...sorted.map(t => `<option value="${t.id}" ${t.id===normalized?'selected':''}>${t.fullName} (${t.id})</option>`)
-    ].join('');
+    const date = document.getElementById('assign-date')?.value;
+    if (Object.keys(this.state.dayLoad).length === 0 && date) {
+      this.showLoading(true);
+      const dl = await this.api({ action:'getDayLoad', date });
+      this.showLoading(false);
+      if (dl.ok && dl.teachers) dl.teachers.forEach(t => { this.state.dayLoad[t.id] = t; });
+    }
+    const normalized = (!currentSubId || currentSubId === 'ไม่จัดสอนแทน') ? 'NO_SUB' : currentSubId.toUpperCase();
+    const excludeIds = new Set(this.state.absentTodayIds || []);
+    if (absentId) excludeIds.add(absentId.toUpperCase());
+    const load = this.state.dayLoad;
+    let freeList = [], busyList = [];
+    this.state.teachers.filter(t => !excludeIds.has(t.id.toUpperCase())).forEach(t => {
+      const td   = load[t.id];
+      const isSelf = t.id.toUpperCase() === normalized; // ครูคนเดิมของคาบนี้ ไม่นับเป็นชนกัน
+      const free = !td || !td.allPeriods.includes(period) || isSelf;
+      const load_ = td ? td.totalDayLoad : 0;
+      const lbl  = td ? `${t.fullName} [วันนี้:${td.totalDayLoad} | ภาคเรียนนี้:${td.semCount} | ปีนี้:${td.yearCount??'-'}]` : t.fullName;
+      const sel  = t.id.toUpperCase() === normalized ? 'selected' : '';
+      (free ? freeList : busyList).push({ id:t.id, lbl, sel, load: load_ });
+    });
+    freeList.sort((a,b) => a.load - b.load);
+    busyList.sort((a,b) => a.load - b.load);
+    const freeOpts = freeList.map(t => `<option value="${t.id}" ${t.sel}>${t.lbl}</option>`).join('');
+    const busyOpts = busyList.map(t => `<option value="${t.id}" ${t.sel}>${t.lbl} ⚠️</option>`).join('');
+    const opts = `<option value="NO_SUB" ${normalized==='NO_SUB'?'selected':''}>— ไม่จัดสอนแทนคาบนี้ —</option>
+      ${freeOpts?`<optgroup label="ว่างคาบนี้">${freeOpts}</optgroup>`:''}
+      ${busyOpts?`<optgroup label="ไม่ว่างคาบนี้">${busyOpts}</optgroup>`:''}`;
     const html = `<div style="background:rgba(0,0,0,.55);position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;" id="quick-edit-overlay" onclick="if(event.target===this)this.remove()">
       <div style="background:#fff;border-radius:16px;padding:24px 26px;min-width:340px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.18);">
         <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:var(--text-1);">✏️ แก้ไขครูสอนแทน</h3>
@@ -1607,7 +1633,8 @@ const App = {
           <span style="color:var(--text-2);">ครูที่ไม่อยู่: <b>${absentName}</b></span>
         </div>
         <label class="form-label">เลือกครูสอนแทน</label>
-        <select id="qe-sub-select" class="form-input" style="margin-bottom:18px;">${opts}</select>
+        <select id="qe-sub-select" class="form-input" style="margin-bottom:6px;" onchange="App.onQuickEditSubChange(this.value,${period},'${building||''}')">${opts}</select>
+        <div id="qe-sub-info" style="margin-bottom:14px;"></div>
         <div style="display:flex;gap:8px;">
           <button onclick="App.doQuickEdit(${rowId})" class="btn btn-primary btn-sm">💾 บันทึก</button>
           <button onclick="document.getElementById('quick-edit-overlay').remove()" class="btn btn-secondary btn-sm">ยกเลิก</button>
@@ -1615,6 +1642,25 @@ const App = {
       </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
+    this.onQuickEditSubChange(normalized, period, building);
+  },
+
+  onQuickEditSubChange(teacherId, period, building) {
+    const el = document.getElementById('qe-sub-info');
+    if (!el) return;
+    if (!teacherId || teacherId === 'NO_SUB') { el.innerHTML = ''; return; }
+    const td = this.state.dayLoad[teacherId];
+    const stats = td
+      ? `<span style="font-size:11px;color:var(--text-2);">วันนี้: <b>${td.totalDayLoad}</b> &nbsp;|&nbsp; ภาคเรียนนี้: <b>${td.semCount}</b> &nbsp;|&nbsp; ปีนี้: <b>${td.yearCount??'-'}</b></span>`
+      : '';
+    // ใช้ checkSubWarnings() ตัวเดียวกับตอนจัดสอนแทนปกติ (เช็คคาบติดกัน + ข้ามอาคาร)
+    const warns = this.checkSubWarnings(teacherId, period, building);
+    const warnColors = { consecutive:'#fff7ed:#fb923c:#7c2d12', building:'#eff6ff:#3b82f6:#1e3a8a' };
+    const warnBadges = warns.map(w => {
+      const [bg, border, text] = (warnColors[w.type] || '#fef9c3:#fbbf24:#713f12').split(':');
+      return `<div style="display:inline-flex;align-items:center;gap:4px;background:${bg};border:1px solid ${border};border-radius:6px;padding:2px 8px;font-size:11px;color:${text};margin-right:4px;">${w.msg}</div>`;
+    }).join('');
+    el.innerHTML = `${stats}${warnBadges ? `<div style="margin-top:4px;">${warnBadges}</div>` : ''}`;
   },
 
   async doQuickEdit(rowId) {
@@ -1692,9 +1738,9 @@ const App = {
     } else if (b.schedule.length === 0) {
       schedHtml = `<p style="color:var(--text-3);font-size:13.5px;font-weight:600;">ไม่พบตารางสอนในวันที่เลือก</p>`;
     } else {
-      schedHtml = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>คาบ</th><th>รหัสวิชา</th><th>ห้องเรียน</th><th>ห้อง</th><th>ครูสอนแทน</th></tr></thead><tbody>`;
+      schedHtml = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>คาบ</th><th>รหัสวิชา</th><th>ระดับชั้น</th><th>ห้อง</th><th>ครูสอนแทน</th></tr></thead><tbody>`;
       b.schedule.forEach(p => {
-        schedHtml += `<tr><td><div class="period-circle">${p.period}</div></td><td style="font-weight:600;">${p.subjectCode||'—'}</td><td>${p.room||'—'}</td><td>${p.roomNum?`ห้อง ${p.roomNum}`:'—'}</td><td style="min-width:220px;">${this.buildSubSelect(id, p.period, b.assignments[p.period]||'')}</td></tr>`;
+        schedHtml += `<tr><td><div class="period-circle">${p.period}</div></td><td style="font-weight:600;">${p.subjectCode||'—'}</td><td>${p.room||'—'}</td><td>${p.roomNum||'—'}</td><td style="min-width:220px;">${this.buildSubSelect(id, p.period, b.assignments[p.period]||'')}</td></tr>`;
       });
       schedHtml += `</tbody></table></div>`;
     }
@@ -1751,8 +1797,8 @@ const App = {
   // รวมคาบทั้งหมดที่ครูจะสอนในวันนี้ (รวมที่กำลังจัดในฟอร์มนี้) พร้อมข้อมูลอาคาร
   getEffectiveAssignments(teacherId) {
     const td = this.state.dayLoad[teacherId];
-    // คาบสอนปกติ (ไม่มีข้อมูลอาคาร เพราะ dayLoad ไม่ส่งมา)
-    const base = (td ? td.allPeriods : []).map(p => ({ period: p, building: null }));
+    // คาบสอนปกติ + คาบสอนแทนที่มีอยู่แล้ว (มีข้อมูลอาคารจาก periodBuildings)
+    const base = (td ? td.allPeriods : []).map(p => ({ period: p, building: td.periodBuildings?.[p] || null }));
     // คาบที่จัดสอนแทนในฟอร์มนี้ (มีข้อมูลอาคาร)
     this.state.absentBlocks.forEach(b => {
       Object.entries(b.assignments || {}).forEach(([p, sid]) => {
@@ -1791,7 +1837,7 @@ const App = {
       if (all[i].period === all[i-1].period + 1) {
         const bA = all[i-1].building, bB = all[i].building;
         if (bA && bB && bA !== bB) {
-          warnings.push({ type:'building', msg:`🏫 ข้ามอาคาร คาบ ${all[i-1].period}→${all[i].period} (อาคาร ${bA}→อาคาร ${bB})` });
+          warnings.push({ type:'building', msg:`🏫 ข้ามอาคาร จากคาบ ${all[i-1].period} อาคาร ${bA} ไปคาบ ${all[i].period} อาคาร ${bB}` });
         }
       }
     }
@@ -2026,7 +2072,7 @@ const App = {
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
     const subs = (r.substitutes||[]).filter(s => s.subId && s.subId !== 'ไม่จัดสอนแทน');
     if (subs.length === 0) { body.innerHTML = `<div class="empty-state"><div class="icon">📅</div><p>ไม่มีรายการสอนแทนในวันที่ ${this.thDateFull(date)}</p></div>`; return; }
-    let html = `<table class="tbl"><thead><tr><th>คาบ</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>วิชา</th><th>ห้อง</th><th>ครูสอนแทน</th><th>สถานะ</th><th></th></tr></thead><tbody>`;
+    let html = `<table class="tbl"><thead><tr><th>คาบ</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>วิชา</th><th>ระดับชั้น</th><th>ครูสอนแทน</th><th>สถานะ</th><th></th></tr></thead><tbody>`;
     subs.sort((a,b)=>a.period-b.period).forEach(s => {
       const badge = s.acknowledged ? `<span class="badge badge-ack">✔ รับทราบ</span>` : `<span class="badge badge-pending">⏳ รอ</span>`;
       const btn   = !s.acknowledged ? `<button onclick="App.acknowledge(${s.rowId},'admin-ack')" class="btn btn-success btn-sm">รับทราบแทน</button>` : '';
@@ -2052,7 +2098,7 @@ const App = {
       this.statBox('รอรับทราบ', subs.length-acked, '#fef3c7', 'var(--warn)');
     const body = document.getElementById('as-list-body');
     if (subs.length === 0) { body.innerHTML = `<div class="empty-state"><div class="icon">📈</div><p>ไม่มีข้อมูล</p></div>`; return; }
-    let html = `<table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ห้อง</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>สถานะ</th></tr></thead><tbody>`;
+    let html = `<table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>วิชา</th><th>ระดับชั้น</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>สถานะ</th></tr></thead><tbody>`;
     subs.forEach(s => {
       const badge = s.acknowledged ? `<span class="badge badge-ack">✔</span>` : `<button onclick="App.acknowledge(${s.rowId},'as-list')" class="btn btn-success btn-sm">รับทราบ</button>`;
       html += `<tr><td style="font-weight:600;color:var(--primary);">${this.thDateShort(s.date)}</td><td><div class="period-circle">${s.period}</div></td><td>${s.subjectCode||'—'}</td><td>${s.room||'—'}</td><td>${s.absentName}</td><td style="color:var(--text-2);">${s.reason||'—'}</td><td>${badge}</td></tr>`;
@@ -2102,7 +2148,7 @@ const App = {
     }
     if (r.records && r.records.length > 0) {
       html += `<div class="card" style="overflow:hidden;"><div class="card-header"><h4 style="font-size:14px;font-weight:700;color:var(--text-1);margin:0;">รายการทั้งหมด (${r.records.length} คาบ)</h4></div>
-        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>วิชา</th><th>ห้อง</th><th>ครูสอนแทน</th><th>สถานะ</th></tr></thead><tbody>`;
+        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>ครูที่ไม่อยู่</th><th>สาเหตุ</th><th>วิชา</th><th>ระดับชั้น</th><th>ครูสอนแทน</th><th>สถานะ</th></tr></thead><tbody>`;
       r.records.forEach(rec => {
         const noS = !rec.subId || rec.subId === 'ไม่จัดสอนแทน';
         const badge = noS ? `<span class="badge badge-nosub">ไม่จัด</span>` : rec.acknowledged ? `<span class="badge badge-ack">✔</span>` : `<span class="badge badge-pending">⏳</span>`;
