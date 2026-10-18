@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบจัดสอนแทน</title>
+<title>ระบบแลกคาบและจัดสอนแทน</title>
+<meta name="theme-color" content="#0a1020">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -250,6 +251,342 @@
     #print-area { display: block !important; font-family: 'Sarabun', sans-serif; }
     @page { size: A4 portrait; margin: 15mm 12mm; }
   }
+  /* ── แลกคาบ ── */
+  .period-pill { display:inline-flex; align-items:center; gap:5px; background:#ede9fe; color:#4c1d95; border:1px solid #ddd6fe; border-radius:8px; padding:3px 9px; font-size:12.5px; font-weight:600; margin:2px 3px 2px 0; }
+  .ret-chip { display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); background:#fff; border-radius:10px; padding:5px 10px; font-size:12.5px; font-weight:600; margin:3px 5px 3px 0; cursor:pointer; color:var(--text-1); font-family:inherit; }
+  .ret-chip:hover { border-color:var(--primary); }
+  .ret-chip.sel { border-color:var(--primary); background:#ede9fe; color:var(--primary-dk); box-shadow:0 0 0 2px rgba(108,99,255,.15); }
+  .ret-chip.leave { border-style:dashed; color:var(--warn); }
+  .swap-opt { border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:#fff; }
+  .swap-opt.sel { border-color:var(--primary); background:#faf9ff; }
+  .chk-row { display:flex; gap:8px; align-items:flex-start; padding:5px 0; font-size:13px; }
+  .badge-info { background:#dbeafe; color:#1e3a8a; }
+  .score-pill { background:linear-gradient(135deg,var(--primary),var(--primary-dk)); color:#fff; border-radius:99px; padding:3px 11px; font-size:12px; font-weight:700; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style id="luxe-css">
+/* ═══════════════════════════════════════════════════════════
+   LUXE THEME — กรมท่าเข้ม · ทองแชมเปญ · เส้นเรขาคณิต
+   ซ้อนทับบนสไตล์เดิม ไม่แตะตรรกะของระบบ
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: dark;
+  --ink-0:#060a14; --ink-1:#0a1020; --ink-2:#0f1830; --ink-3:#16223f;
+  --gold:#d6b97e; --gold-hi:#f0dfb2; --gold-lo:#a88a4f;
+  --gold-pale:rgba(214,185,126,.12);
+  --line:rgba(214,185,126,.16); --line-soft:rgba(214,185,126,.08);
+  --ivory:#ece8dc;
+  --navy:#0a1020; --white:rgba(15,24,48,.72); --surface:rgba(255,255,255,.045);
+  --border:rgba(214,185,126,.16);
+  --text-1:#ece8dc; --text-2:#b3b9c9; --text-3:#8a92a8;
+  --primary:#d6b97e; --primary-dk:#b8995c;
+  --success:#6fcfaa; --danger:#ef8a8a; --warn:#e6b85c;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:18px;
+  --shadow-sm:0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6);
+  --shadow-md:0 20px 50px -18px rgba(0,0,0,.7);
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+html, body { background:var(--ink-0) !important; color:var(--text-1); }
+body {
+  background:
+    radial-gradient(1100px 650px at 88% -12%, rgba(214,185,126,.10), transparent 62%),
+    radial-gradient(900px 620px at -8% 108%, rgba(58,92,170,.20), transparent 62%),
+    linear-gradient(180deg,#070b16 0%,#0a1020 55%,#060a14 100%) fixed !important;
+}
+* { font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; }
+h1,h2,h3,h4,#dash-title,.serif { font-family:'Noto Serif Thai','IBM Plex Sans Thai',serif !important; letter-spacing:.005em; }
+.stat-num { font-family:'Cormorant Garamond','Noto Serif Thai',serif !important; font-variant-numeric:lining-nums; font-weight:600 !important; letter-spacing:-.01em; }
+::selection { background:rgba(214,185,126,.35); color:#fff; }
+::-webkit-scrollbar-thumb { background:rgba(214,185,126,.22) !important; }
+::-webkit-scrollbar-thumb:hover { background:rgba(214,185,126,.4) !important; }
+
+/* ── พื้นหลังกราฟิก ── */
+#bg-stage { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+#bg-canvas { position:absolute; inset:0; width:100%; height:100%; }
+.bg-orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:.55; will-change:transform; }
+.bg-orb.o1 { width:520px; height:520px; right:-120px; top:-140px; background:radial-gradient(circle,rgba(214,185,126,.30),transparent 68%); animation:orbA 38s ease-in-out infinite alternate; }
+.bg-orb.o2 { width:620px; height:620px; left:-200px; bottom:-220px; background:radial-gradient(circle,rgba(52,92,190,.38),transparent 68%); animation:orbB 46s ease-in-out infinite alternate; }
+.bg-orb.o3 { width:380px; height:380px; left:42%; top:38%; background:radial-gradient(circle,rgba(120,90,200,.14),transparent 70%); animation:orbA 54s ease-in-out infinite alternate-reverse; }
+@keyframes orbA { from{transform:translate3d(0,0,0) scale(1)} to{transform:translate3d(-90px,70px,0) scale(1.15)} }
+@keyframes orbB { from{transform:translate3d(0,0,0) scale(1)} to{transform:translate3d(110px,-60px,0) scale(1.1)} }
+#bg-grain { position:fixed; inset:0; z-index:9990; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+#page-dashboard { position:relative; z-index:1; }
+#sidebar-overlay { background:rgba(3,6,14,.6) !important; backdrop-filter:none !important; }
+#page-dashboard.active { animation:stageInSoft .7s var(--ease) both; }
+@keyframes stageInSoft { from{opacity:0} to{opacity:1} }
+@keyframes stageIn { from{opacity:0; filter:blur(6px)} to{opacity:1; filter:none} }
+
+/* ── Sidebar ── */
+#sidebar { background:linear-gradient(180deg,rgba(11,18,36,.88),rgba(6,10,20,.94)) !important; backdrop-filter:blur(22px) saturate(140%); border-right:1px solid var(--line) !important; box-shadow:20px 0 60px -30px rgba(0,0,0,.8) !important; }
+.sidebar-logo-wrap { border-bottom:1px solid var(--line-soft) !important; }
+.nav-label { color:rgba(214,185,126,.55) !important; letter-spacing:.2em !important; font-size:9.5px !important; }
+.nav-item { position:relative; overflow:hidden; color:rgba(236,232,220,.62) !important; border-radius:10px !important; transition:color .3s var(--ease), background .3s var(--ease), transform .3s var(--ease) !important; }
+.nav-item::before { content:''; position:absolute; left:0; top:50%; width:3px; height:0; border-radius:3px; background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo)); box-shadow:0 0 14px rgba(214,185,126,.8); transform:translateY(-50%); transition:height .35s var(--ease); }
+.nav-item:hover { background:linear-gradient(90deg,rgba(214,185,126,.10),rgba(214,185,126,0)) !important; color:var(--ivory) !important; transform:translateX(3px); }
+.nav-item:hover::before { height:40%; }
+.nav-item.active { background:linear-gradient(90deg,rgba(214,185,126,.17),rgba(214,185,126,.02)) !important; color:var(--gold-hi) !important; border-left:0 !important; margin-left:8px !important; padding-left:14px !important; box-shadow:inset 0 0 0 1px rgba(214,185,126,.14) !important; }
+.nav-item.active::before { height:62%; }
+.nav-item .nav-icon { transition:transform .35s var(--ease), opacity .3s; }
+.nav-item:hover .nav-icon { transform:scale(1.14) rotate(-4deg); opacity:1; }
+#sidebar.collapsed .nav-item:hover { transform:none; }
+#sidebar.collapsed .nav-item.active { margin-left:6px !important; padding-left:0 !important; }
+#sb-avatar { background:linear-gradient(135deg,var(--gold-hi),var(--gold-lo)) !important; color:#0a1020 !important; box-shadow:0 0 0 1px rgba(255,255,255,.25) inset, 0 6px 18px -6px rgba(214,185,126,.7); }
+#sidebar [style*="border-top"] { border-top:1px solid var(--line-soft) !important; background:rgba(0,0,0,.18) !important; }
+
+/* ── Header / main ── */
+#page-dashboard header { background:rgba(10,16,32,.55) !important; backdrop-filter:blur(18px) saturate(140%); border-bottom:1px solid var(--line) !important; box-shadow:none !important; }
+#dash-title { color:var(--ivory) !important; font-weight:600 !important; font-size:17px !important; }
+#header-sem { background:rgba(214,185,126,.08) !important; border:1px solid var(--line) !important; color:var(--gold) !important; letter-spacing:.04em; }
+#main-content { background:transparent !important; }
+#hamburger { color:var(--text-2) !important; }
+#hamburger:hover { background:rgba(214,185,126,.1) !important; color:var(--gold-hi) !important; }
+#hamburger:hover span:nth-child(1){ transform:translateX(-2px); } #hamburger:hover span:nth-child(3){ transform:translateX(2px); }
+
+/* ── ปุ่ม ── */
+.btn { position:relative; overflow:hidden; isolation:isolate; letter-spacing:.01em;
+  transition:transform .28s var(--ease), box-shadow .35s var(--ease), background .3s, border-color .3s, color .3s, filter .3s !important; will-change:transform; }
+.btn::after { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.34) 50%,transparent 65%); transform:translateX(-130%); transition:transform .8s var(--ease); }
+.btn:hover::after { transform:translateX(130%); }
+.btn:hover { transform:translateY(-2px); }
+.btn:active { transform:translateY(0) scale(.965); transition-duration:.08s !important; }
+.btn:focus-visible, .chip:focus-visible, .form-input:focus-visible { outline:2px solid rgba(240,223,178,.7); outline-offset:2px; }
+.btn-primary, .btn-gold { background:linear-gradient(135deg,var(--gold-hi) 0%,var(--gold) 45%,var(--gold-lo) 100%) !important; color:#0a1020 !important; font-weight:700 !important; box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 8px 22px -8px rgba(214,185,126,.65) !important; }
+.btn-primary:hover, .btn-gold:hover { box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 14px 32px -8px rgba(214,185,126,.85) !important; filter:brightness(1.05); opacity:1 !important; }
+.btn-primary:disabled, .btn-gold:disabled { filter:grayscale(.6) brightness(.7); box-shadow:none !important; transform:none; }
+.btn-secondary { background:rgba(255,255,255,.05) !important; color:var(--ivory) !important; border:1px solid var(--line) !important; }
+.btn-secondary:hover { background:rgba(214,185,126,.12) !important; border-color:rgba(214,185,126,.45) !important; color:var(--gold-hi) !important; }
+.btn-outline { background:transparent !important; color:var(--gold) !important; border:1px solid rgba(214,185,126,.5) !important; }
+.btn-outline:hover { background:rgba(214,185,126,.12) !important; color:var(--gold-hi) !important; box-shadow:0 0 0 4px rgba(214,185,126,.08), 0 10px 26px -10px rgba(214,185,126,.5); }
+.btn-success { background:linear-gradient(135deg,#7fdcb8,#3fa98a) !important; color:#05241a !important; font-weight:700 !important; box-shadow:0 8px 20px -8px rgba(80,200,160,.55); }
+.btn-danger { background:linear-gradient(135deg,#f29b9b,#cf5a5a) !important; color:#2a0808 !important; font-weight:700 !important; box-shadow:0 8px 20px -8px rgba(230,110,110,.5); }
+.btn-warn { background:linear-gradient(135deg,#f0cd85,#cf9b3d) !important; color:#2a1c04 !important; }
+.ripple { position:absolute; border-radius:50%; pointer-events:none; z-index:0; background:radial-gradient(circle,rgba(255,244,214,.75) 0%,rgba(240,223,178,.35) 45%,transparent 70%); transform:scale(0); animation:ripple .75s var(--ease) forwards; }
+.btn-secondary .ripple, .btn-outline .ripple, .chip .ripple, .nav-item .ripple, .ret-chip .ripple { background:radial-gradient(circle,rgba(240,223,178,.45) 0%,rgba(214,185,126,.2) 45%,transparent 70%); }
+@keyframes ripple { to { transform:scale(1); opacity:0; } }
+
+/* ── Chip ── */
+.chip { background:rgba(255,255,255,.04) !important; color:var(--text-2) !important; border:1px solid var(--line) !important; position:relative; overflow:hidden; transition:all .3s var(--ease) !important; }
+.chip:hover { border-color:rgba(214,185,126,.5) !important; color:var(--gold-hi) !important; transform:translateY(-1px); }
+.chip:active { transform:scale(.96); }
+.chip.active { background:linear-gradient(135deg,rgba(240,223,178,.22),rgba(214,185,126,.1)) !important; color:var(--gold-hi) !important; border-color:rgba(214,185,126,.6) !important; box-shadow:0 0 0 3px rgba(214,185,126,.07), 0 8px 20px -10px rgba(214,185,126,.5); }
+
+/* ── Card & spotlight ── */
+.card, .stat-box, .swap-opt, .absent-block { position:relative; background:linear-gradient(180deg,rgba(22,34,63,.62),rgba(12,20,40,.62)) !important; backdrop-filter:blur(14px) saturate(130%); border:1px solid var(--line) !important; box-shadow:var(--shadow-sm) !important; transition:transform .45s var(--ease), box-shadow .45s var(--ease), border-color .45s; }
+.card:hover, .swap-opt:hover { border-color:rgba(214,185,126,.28) !important; }
+.stat-box:hover { transform:translateY(-3px); box-shadow:0 22px 44px -18px rgba(0,0,0,.75), 0 0 0 1px rgba(214,185,126,.25) !important; }
+.card::after, .stat-box::after, .swap-opt::after { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; opacity:0; transition:opacity .4s;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(240,223,178,.7),transparent 62%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+.card:hover::after, .stat-box:hover::after, .swap-opt:hover::after { opacity:1; }
+.card::before, .stat-box::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .5s;
+  background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%),rgba(214,185,126,.07),transparent 65%); }
+.card:hover::before, .stat-box:hover::before { opacity:1; }
+.card-header { border-bottom:1px solid transparent !important; border-image:linear-gradient(90deg,rgba(214,185,126,.35),rgba(214,185,126,.04)) 1 !important; }
+.swap-opt.sel { border-color:rgba(214,185,126,.65) !important; box-shadow:0 0 0 3px rgba(214,185,126,.09), var(--shadow-sm) !important; }
+.stat-box { border-radius:var(--radius-lg) !important; }
+.stat-num { color:var(--gold-hi); background:linear-gradient(180deg,#fff6d8,var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; font-size:38px !important; }
+.stat-lbl { color:var(--text-2) !important; letter-spacing:.06em; font-size:12px !important; }
+
+/* ── ตาราง ── */
+.tbl th { background:transparent !important; color:var(--gold) !important; letter-spacing:.14em !important; font-size:10.5px !important; border-bottom:1px solid var(--line) !important; }
+.tbl td { border-bottom:1px solid var(--line-soft) !important; color:var(--text-1) !important; }
+.tbl tr { transition:background .3s; }
+.tbl tr:hover td { background:linear-gradient(90deg,rgba(214,185,126,.08),rgba(214,185,126,.015)) !important; }
+.period-circle { background:radial-gradient(circle at 30% 25%,rgba(240,223,178,.28),rgba(214,185,126,.06)) !important; color:var(--gold-hi) !important; border:1px solid rgba(214,185,126,.55); box-shadow:0 0 0 3px rgba(214,185,126,.06), 0 6px 14px -6px rgba(214,185,126,.5); font-family:'Cormorant Garamond','IBM Plex Sans Thai',serif !important; font-size:16px !important; font-weight:700 !important; transition:transform .4s var(--ease), box-shadow .4s; }
+tr:hover .period-circle { transform:scale(1.1) rotate(-6deg); box-shadow:0 0 0 4px rgba(214,185,126,.12), 0 8px 18px -6px rgba(214,185,126,.8); }
+
+/* ── ฟอร์ม ── */
+.form-input { background:rgba(4,8,18,.55) !important; border:1px solid var(--line) !important; color:var(--ivory) !important; transition:border-color .3s, box-shadow .3s, background .3s !important; }
+.form-input:hover { border-color:rgba(214,185,126,.35) !important; }
+.form-input:focus { border-color:rgba(240,223,178,.8) !important; box-shadow:0 0 0 4px rgba(214,185,126,.12), 0 8px 24px -12px rgba(214,185,126,.6) !important; background:rgba(4,8,18,.8) !important; }
+.form-input::placeholder { color:#6a738a; }
+.form-label { color:var(--text-2) !important; letter-spacing:.03em; font-size:12.5px !important; }
+select.form-input option, select.form-input optgroup { background:#0f1830; color:var(--ivory); }
+input[type=checkbox] { accent-color:var(--gold); }
+
+/* ── ป้ายสถานะ ── */
+.badge { border:1px solid transparent; letter-spacing:.02em; }
+.badge-ack { background:rgba(111,207,170,.14) !important; color:#8fdcc0 !important; border-color:rgba(111,207,170,.28); }
+.badge-pending { background:rgba(230,184,92,.14) !important; color:#efc87a !important; border-color:rgba(230,184,92,.28); }
+.badge-nosub { background:rgba(255,255,255,.05) !important; color:var(--text-3) !important; border-color:var(--line-soft); }
+.badge-warn { background:rgba(230,184,92,.14) !important; color:#efc87a !important; border-color:rgba(230,184,92,.3); }
+.badge-error { background:rgba(239,138,138,.14) !important; color:#f2a1a1 !important; border-color:rgba(239,138,138,.3); }
+.badge-info { background:rgba(127,167,224,.14) !important; color:#9dbcf0 !important; border-color:rgba(127,167,224,.3); }
+.period-pill { background:rgba(214,185,126,.1) !important; color:var(--gold-hi) !important; border-color:rgba(214,185,126,.3) !important; }
+.ret-chip { background:rgba(255,255,255,.04) !important; color:var(--ivory) !important; border:1px solid var(--line) !important; position:relative; overflow:hidden; transition:all .3s var(--ease) !important; }
+.ret-chip:hover { border-color:rgba(214,185,126,.6) !important; transform:translateY(-2px); }
+.ret-chip.sel { background:linear-gradient(135deg,rgba(240,223,178,.25),rgba(214,185,126,.1)) !important; color:var(--gold-hi) !important; border-color:var(--gold) !important; box-shadow:0 0 0 3px rgba(214,185,126,.12), 0 8px 20px -10px rgba(214,185,126,.7) !important; }
+.ret-chip.leave { color:#efc87a !important; }
+.score-pill { background:linear-gradient(135deg,var(--gold-hi),var(--gold-lo)) !important; color:#0a1020 !important; box-shadow:0 6px 16px -6px rgba(214,185,126,.7); }
+.empty-state { color:var(--text-3) !important; }
+.empty-state .icon { filter:grayscale(.3) drop-shadow(0 8px 20px rgba(214,185,126,.25)); animation:floaty 5s ease-in-out infinite; }
+@keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.section-title { color:var(--gold) !important; letter-spacing:.2em !important; }
+
+/* ── Toast / Loading / Modal ── */
+#toast { background:rgba(12,20,40,.92) !important; backdrop-filter:blur(16px); border:1px solid var(--line); border-left:3px solid var(--gold); color:var(--ivory) !important; box-shadow:0 24px 60px -16px rgba(0,0,0,.8) !important; }
+#toast.success { border-left-color:#6fcfaa; } #toast.error { border-left-color:#ef8a8a; } #toast.warn { border-left-color:#e6b85c; }
+#toast { animation:toastIn .5s var(--ease) !important; }
+@keyframes toastIn { from{transform:translateY(20px) scale(.96); opacity:0} to{transform:none; opacity:1} }
+#loading { background:rgba(4,8,18,.6) !important; backdrop-filter:blur(8px) !important; }
+.spinner { border:2px solid rgba(214,185,126,.18) !important; border-top-color:var(--gold-hi) !important; box-shadow:0 0 30px rgba(214,185,126,.35); }
+#swap-modal > div, #quick-edit-overlay > div, #session-warn-modal > div { animation:modalIn .5s var(--ease) both; border:1px solid var(--line); }
+@keyframes modalIn { from{transform:translateY(24px) scale(.96); opacity:0} to{transform:none; opacity:1} }
+#swap-modal, #quick-edit-overlay { backdrop-filter:blur(8px); animation:fadeIn .3s both; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ── ทรานซิชันของหน้า ── */
+.panel.active { animation:panelIn .6s var(--ease) both; }
+@keyframes panelIn { from{opacity:0; transform:translateY(14px); filter:blur(4px)} to{opacity:1; transform:none; filter:none} }
+.panel.active > * { animation:riseIn .7s var(--ease) both; }
+.panel.active > *:nth-child(1){animation-delay:.02s} .panel.active > *:nth-child(2){animation-delay:.08s}
+.panel.active > *:nth-child(3){animation-delay:.14s} .panel.active > *:nth-child(4){animation-delay:.2s}
+.panel.active > *:nth-child(5){animation-delay:.26s} .panel.active > *:nth-child(n+6){animation-delay:.32s}
+@keyframes riseIn { from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none} }
+.tbl tbody tr { animation:rowIn .55s var(--ease) both; }
+.tbl tbody tr:nth-child(1){animation-delay:.03s} .tbl tbody tr:nth-child(2){animation-delay:.06s} .tbl tbody tr:nth-child(3){animation-delay:.09s}
+.tbl tbody tr:nth-child(4){animation-delay:.12s} .tbl tbody tr:nth-child(5){animation-delay:.15s} .tbl tbody tr:nth-child(6){animation-delay:.18s}
+.tbl tbody tr:nth-child(7){animation-delay:.21s} .tbl tbody tr:nth-child(8){animation-delay:.24s} .tbl tbody tr:nth-child(n+9){animation-delay:.27s}
+@keyframes rowIn { from{opacity:0; transform:translateX(-10px)} to{opacity:1; transform:none} }
+.swap-opt, .absent-block, .done-block { animation:riseIn .6s var(--ease) both; }
+
+/* ── หน้า Login ── */
+#page-login { position:fixed; inset:0; z-index:999; background:radial-gradient(900px 600px at 15% 10%,rgba(214,185,126,.10),transparent 60%),rgba(5,8,16,.93) !important; backdrop-filter:blur(14px); animation:stageIn .5s var(--ease) both; }
+#page-login > div:first-child { background:linear-gradient(160deg,rgba(6,10,20,.35),rgba(6,10,20,.1)) !important; border-right:1px solid var(--line); }
+#page-login > div:last-child { background:rgba(7,11,22,.62) !important; backdrop-filter:blur(26px) saturate(140%); }
+#page-login h2 { font-family:'Noto Serif Thai',serif !important; font-weight:600 !important; color:var(--ivory) !important; }
+#page-login > div:first-child h2 { font-size:32px !important; background:linear-gradient(180deg,#fff6d8,var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+#page-login > div:first-child > div:last-child > div { background:rgba(214,185,126,.07) !important; border:1px solid var(--line); backdrop-filter:blur(10px); transition:transform .4s var(--ease), border-color .4s; }
+#page-login > div:first-child > div:last-child > div:hover { transform:translateY(-3px); border-color:rgba(214,185,126,.45); }
+#page-login > div:first-child [id^=stat-] { font-family:'Cormorant Garamond',serif !important; font-size:30px !important; font-weight:600 !important; color:var(--gold-hi) !important; }
+#page-login [style*="width:52px"] { background:rgba(214,185,126,.1) !important; border:1px solid var(--line); }
+#btn-close-login { background:rgba(255,255,255,.06) !important; color:var(--text-2) !important; transition:all .3s var(--ease); } #btn-close-login:hover { background:rgba(214,185,126,.18) !important; transform:rotate(90deg); }
+
+/* ── แปลงสีที่ฝังอยู่ในโค้ด (inline) ให้เข้าธีมมืด ── */
+[style*="background:#fff;"]:not(#home-export-content *, #assign-existing-export *), [style$="background:#fff"]:not(#home-export-content *) { background:rgba(12,20,40,.9) !important; }
+[style*="background:#fee2e2"]:not(#home-export-content *, #assign-existing-export *), [style*="background:#fef2f2"]:not(#home-export-content *) { background:rgba(239,138,138,.12) !important; }
+[style*="background:#ede9fe"]:not(#home-export-content *, #assign-existing-export *), [style*="background:#faf9ff"]:not(#home-export-content *), [style*="background:#f5f3ff"]:not(#home-export-content *) { background:rgba(214,185,126,.1) !important; }
+[style*="background:#fffbeb"]:not(#home-export-content *), [style*="background:#fef3c7"]:not(#home-export-content *), [style*="background:#fffdf5"]:not(#home-export-content *), [style*="background:#fef9c3"]:not(#home-export-content *) { background:rgba(230,184,92,.12) !important; }
+[style*="background:#ecfdf5"]:not(#home-export-content *), [style*="background:#d1fae5"]:not(#home-export-content *), [style*="background:#dcf5ec"]:not(#home-export-content *) { background:rgba(111,207,170,.12) !important; }
+[style*="background:#dbeafe"]:not(#home-export-content *), [style*="background:#eff6ff"]:not(#home-export-content *) { background:rgba(127,167,224,.12) !important; }
+[style*="background:#f8fafc"]:not(#home-export-content *), [style*="background:#f1f5f9"]:not(#home-export-content *), [style*="background:#f3f4f6"]:not(#home-export-content *), [style*="background:#fafafa"]:not(#home-export-content *) { background:rgba(255,255,255,.045) !important; }
+[style*="color:#991b1b"]:not(#home-export-content *), [style*="color:#dc2626"]:not(#home-export-content *), [style*="color:#ef4444"]:not(#home-export-content *) { color:#f2a1a1 !important; }
+[style*="color:#065f46"]:not(#home-export-content *), [style*="color:#059669"]:not(#home-export-content *), [style*="color:#16a34a"]:not(#home-export-content *) { color:#8fdcc0 !important; }
+[style*="color:#92400e"]:not(#home-export-content *), [style*="color:#78350f"]:not(#home-export-content *), [style*="color:#d97706"]:not(#home-export-content *) { color:#efc87a !important; }
+[style*="color:#6b7280"]:not(#home-export-content *), [style*="color:#555"]:not(#home-export-content *), [style*="color:#666"]:not(#home-export-content *), [style*="color:#9ca3af"]:not(#home-export-content *) { color:#9aa3b8 !important; }
+[style*="color:#1e3a8a"]:not(#home-export-content *), [style*="color:#2563eb"]:not(#home-export-content *) { color:#9dbcf0 !important; }
+[style*="color:#4c1d95"]:not(#home-export-content *), [style*="color:#5b21b6"]:not(#home-export-content *), [style*="color:#6d28d9"]:not(#home-export-content *), [style*="color:#6c63ff"]:not(#home-export-content *) { color:var(--gold-hi) !important; }
+[style*="color:#334155"]:not(#home-export-content *), [style*="color:#111827"]:not(#home-export-content *), [style*="color:#1e293b"]:not(#home-export-content *) { color:var(--ivory) !important; }
+[style*="solid #e5e7eb"], [style*="solid #e2e8f0"], [style*="solid #c7d2fe"], [style*="solid #ddd6fe"], [style*="solid #e0e7ff"], [style*="solid #f0f2f7"] { border-color:var(--line) !important; }
+[style*="solid #fca5a5"], [style*="solid #fecaca"] { border-color:rgba(239,138,138,.35) !important; }
+[style*="solid #fde68a"] { border-color:rgba(230,184,92,.35) !important; }
+[style*="background:var(--surface)"] { background:rgba(255,255,255,.045) !important; }
+tr[style*="background:var(--surface)"] { background:rgba(214,185,126,.06) !important; }
+
+/* กระดาษสำหรับส่งออกภาพ: คงโทนสว่างอ่านง่ายเมื่อบันทึกเป็นรูป */
+#home-export-content, #assign-existing-export {
+  --white:#fff; --surface:#f5f3ff; --border:#e5e7eb; --text-1:#111827; --text-2:#4b5563; --text-3:#9ca3af; --primary:#6c63ff; --navy:#1e1b4b;
+  color:#111827; border-radius:18px; box-shadow:0 30px 70px -26px rgba(0,0,0,.85), 0 0 0 1px rgba(214,185,126,.3); }
+#home-export-content .card, #assign-existing-export .card { background:#fff !important; backdrop-filter:none; border-color:#e5e7eb !important; box-shadow:none !important; }
+#home-export-content .tbl th, #assign-existing-export .tbl th { color:#6b7280 !important; background:#f8fafc !important; }
+#home-export-content .tbl td, #assign-existing-export .tbl td { color:#374151 !important; border-bottom-color:#f0f2f7 !important; }
+#home-export-content .tbl tr:hover td { background:#fafbfd !important; }
+#home-export-content .period-circle, #assign-existing-export .period-circle { background:#1e1b4b !important; color:#fff !important; border:0; box-shadow:none; }
+#home-export-content .badge-ack { background:#dcf5ec !important; color:#0a5c3e !important; } #home-export-content .badge-pending { background:#fef3c7 !important; color:#854d0e !important; }
+#home-export-content .badge-nosub { background:#f5f3ff !important; color:#9ca3af !important; }
+#home-export-content .card::after, #home-export-content .card::before { display:none; }
+
+@media (max-width:767px){ .bg-orb { opacity:.4; } .stat-num{ font-size:30px !important; } }
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; } .bg-orb{animation:none !important;} }
+@media print { #bg-stage, #bg-grain { display:none !important; } body { background:#fff !important; } }
+
+/* ── หน้ายินดีต้อนรับ ── */
+#welcome { position:fixed; inset:0; z-index:5000; display:flex; align-items:center; justify-content:center; padding:24px; cursor:pointer;
+  background:radial-gradient(900px 600px at 50% 40%,rgba(10,16,32,.55),rgba(5,8,16,.9)); backdrop-filter:blur(22px) saturate(130%); animation:wlBg .9s var(--ease) both; }
+#welcome.leaving { animation:wlOut .65s var(--ease) both; pointer-events:none; }
+@keyframes wlBg { from{opacity:0} to{opacity:1} }
+@keyframes wlOut { to{opacity:0; transform:scale(1.04); filter:blur(10px)} }
+.wl-wrap { text-align:center; max-width:760px; width:100%; }
+.wl-wrap > * { opacity:0; animation:wlRise .9s var(--ease) forwards; }
+.wl-emblem { position:relative; width:96px; height:96px; margin:0 auto 22px; animation-delay:.1s !important; }
+.wl-emblem svg { position:absolute; inset:0; overflow:visible; }
+.wl-emblem img { position:absolute; inset:24px; width:48px; height:48px; object-fit:contain; filter:drop-shadow(0 4px 14px rgba(214,185,126,.45)); }
+.wl-ring { fill:none; stroke:var(--gold); stroke-width:1; stroke-dasharray:340; stroke-dashoffset:340; animation:wlDraw 2.2s .25s var(--ease) forwards; }
+.wl-ring.r2 { stroke:rgba(214,185,126,.5); animation-delay:.5s; } .wl-ring.r3 { stroke:rgba(214,185,126,.35); animation-delay:.75s; transform-origin:60px 60px; }
+@keyframes wlDraw { to { stroke-dashoffset:0; } }
+.wl-kicker { margin:0 0 10px; font-size:12.5px; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); animation-delay:.35s !important; }
+.wl-name { margin:0 0 16px; font-size:clamp(28px,5.2vw,48px); line-height:1.25; font-weight:600; background:linear-gradient(180deg,#fff8de 10%,var(--gold) 90%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation-delay:.5s !important; }
+.wl-dept { display:flex; align-items:center; justify-content:center; gap:16px; margin:0 0 10px; color:var(--ivory); font-family:'Noto Serif Thai',serif; font-size:clamp(15px,2.2vw,19px); animation-delay:.65s !important; }
+.wl-dept i { height:1px; width:clamp(30px,9vw,90px); background:linear-gradient(90deg,transparent,var(--gold)); } .wl-dept i:last-child { transform:scaleX(-1); }
+.wl-sub { margin:0 0 34px; font-size:13.5px; color:var(--text-2); letter-spacing:.04em; animation-delay:.78s !important; }
+.wl-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin:0 auto 34px; animation-delay:.9s !important; }
+.wl-tile { all:unset; box-sizing:border-box; cursor:pointer; padding:18px 14px 16px; border-radius:16px; background:rgba(214,185,126,.06); border:1px solid var(--line); transition:transform .4s var(--ease), border-color .4s, background .4s, box-shadow .4s; }
+.wl-tile:hover { transform:translateY(-4px); border-color:rgba(214,185,126,.55); background:rgba(214,185,126,.11); box-shadow:0 20px 40px -18px rgba(214,185,126,.45); }
+.wl-tile:focus-visible { outline:2px solid var(--gold-hi); outline-offset:2px; }
+.wl-tile b { display:block; font-family:'Cormorant Garamond',serif; font-size:42px; line-height:1; font-weight:600; color:var(--gold-hi); margin-bottom:8px; font-variant-numeric:lining-nums; transition:transform .5s var(--ease); }
+.wl-tile b.in { animation:wlPop .6s var(--ease); }
+@keyframes wlPop { from{transform:scale(.6); opacity:0} to{transform:none; opacity:1} }
+.wl-tile span { font-size:12.5px; color:var(--text-2); letter-spacing:.03em; }
+.wl-go { padding:13px 34px !important; font-size:15px !important; border-radius:99px !important; animation-delay:1.05s !important; }
+.wl-go span { display:inline-block; transition:transform .35s var(--ease); } .wl-go:hover span { transform:translateX(5px); }
+.wl-hint { margin:14px 0 0; font-size:11.5px; color:var(--text-3); letter-spacing:.08em; animation-delay:1.2s !important; }
+@keyframes wlRise { from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none} }
+
+/* ── Dashboard ── */
+.dx-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:2px 0 22px}
+.dx-kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;font-weight:600}
+.dx-title{font-size:28px;font-weight:600;margin:0 0 6px;line-height:1.25;color:var(--ivory)}
+.dx-sub{margin:0;color:var(--text-3);font-size:13.5px}
+.dx-hero-act{display:flex;gap:10px;flex-wrap:wrap}
+.dx-grid{display:grid;gap:14px;margin-bottom:14px}
+.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dx-two{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+.dx-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1000px){.dx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-two,.dx-three{grid-template-columns:1fr}}
+@media(max-width:520px){.dx-title{font-size:22px}.dx-kpis{gap:10px}}
+.dx-kpi{padding:18px 18px 16px;border-radius:var(--radius-lg);position:relative;overflow:hidden}
+.dx-kpi .dx-lbl{font-size:12px;color:var(--text-3);letter-spacing:.04em;margin:0 0 8px}
+.dx-kpi .stat-num{font-size:40px!important;line-height:1;margin:0}
+.dx-kpi .dx-foot{font-size:12px;color:var(--text-2);margin:10px 0 0}
+.dx-kpi .dx-ring{position:absolute;right:14px;top:14px}
+.dx-card{padding:18px 20px}
+.dx-card h3{font-size:14.5px;margin:0 0 14px;color:var(--ivory);font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dx-card h3 small{font-size:11.5px;color:var(--text-3);font-weight:400;font-family:inherit}
+.dx-bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:8px}
+.dx-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;min-width:0}
+.dx-bar i{display:block;width:100%;max-width:26px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo));transform-origin:bottom;transform:scaleY(0);animation:dxGrow .8s var(--ease) forwards;animation-delay:calc(var(--i)*40ms);min-height:2px;position:relative}
+.dx-bar i.zero{background:rgba(214,185,126,.18);box-shadow:none}
+.dx-bar i.today{box-shadow:0 0 18px rgba(214,185,126,.55)}
+.dx-bar span{font-size:10.5px;color:var(--text-3);white-space:nowrap}
+.dx-bar b{font-size:11px;color:var(--gold-hi);font-weight:600;height:14px;line-height:14px}
+.dx-bar.we i{opacity:.35}
+@keyframes dxGrow{to{transform:scaleY(1)}}
+.dx-hb{display:grid;grid-template-columns:minmax(70px,.9fr) 3fr auto;gap:10px;align-items:center;margin:9px 0;font-size:13px;color:var(--text-2)}
+.dx-hb .tr{height:8px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+.dx-hb .tr i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold-lo),var(--gold-hi));width:0;transition:width 1s var(--ease)}
+.dx-hb em{font-style:normal;color:var(--gold-hi);font-weight:600;min-width:24px;text-align:right}
+.dx-me{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:700px){.dx-me{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dx-me div{padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line-soft)}
+.dx-me p{margin:0;font-size:11.5px;color:var(--text-3)}
+.dx-me strong{display:block;font-size:26px;font-family:'Cormorant Garamond','Noto Serif Thai',serif;color:var(--gold-hi);font-weight:600;margin-top:2px}
+.dx-lock{text-align:center;padding:30px 18px;color:var(--text-3);font-size:13.5px}
+.dx-lock b{display:block;color:var(--ivory);font-size:15px;margin-bottom:6px;font-weight:600}
+.dx-new{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 10px var(--gold);margin-right:6px;animation:dxPulse 2s infinite}
+@keyframes dxPulse{50%{opacity:.3}}
+.dx-rank{counter-reset:r}
+.dx-rank div{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--text-2)}
+.dx-rank div:last-child{border:0}
+.dx-rank div::before{counter-increment:r;content:counter(r);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--gold-hi);border:1px solid var(--line);flex-shrink:0}
+.dx-rank span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-rank em{font-style:normal;color:var(--gold-hi);font-weight:600}
+.dx-tblwrap{overflow-x:auto}
+.dx-more{display:flex;justify-content:center;padding:12px}
+input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:rgba(255,255,255,.05)!important;color:var(--ivory)!important;border:1px solid var(--line)!important;border-radius:10px;padding:7px 10px;color-scheme:dark}
+@media (max-width:767px){ #sidebar{ background:linear-gradient(180deg,#0b1224,#060a14) !important; backdrop-filter:none !important; } }
+
 </style>
 </head>
 <body>
@@ -273,11 +610,11 @@
           <img src="logo.png" style="width:36px;height:36px;object-fit:contain;">
         </div>
         <div>
-          <p id="login-dept-name" style="color:#fff;font-size:13px;font-weight:700;margin:0;line-height:1.3;">กลุ่มสาระการเรียนรู้คณิตศาสตร์</p>
+          <p id="login-dept-name" style="color:#fff;font-size:13px;font-weight:700;margin:0;line-height:1.3;">ระบบแลกคาบและจัดสอนแทน</p>
           <p id="login-school-name" style="color:rgba(255,255,255,.55);font-size:11.5px;margin:0;font-weight:400;">โรงเรียนบุญวัฒนา</p>
         </div>
       </div>
-      <h2 style="color:#fff;font-size:26px;font-weight:700;margin:0 0 14px;line-height:1.35;">ระบบบริหารจัดการ<br>การสอนแทน</h2>
+      <h2 style="color:#fff;font-size:26px;font-weight:700;margin:0 0 14px;line-height:1.35;">ระบบแลกคาบ<br>และจัดสอนแทน</h2>
       <p style="color:rgba(255,255,255,.65);font-size:14px;margin:0;line-height:1.7;">"จัดการสอนแทนได้ง่าย รวดเร็ว<br>และโปร่งใส ทุกวัน ทุกคาบ"</p>
     </div>
     <!-- Stats row -->
@@ -343,14 +680,18 @@
     <div class="sidebar-logo-wrap" style="padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px;">
       <img src="data:image/png;base64,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" alt="โลโก้" style="width:40px;height:40px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 1px 4px rgba(0,0,0,.3));">
       <div class="sidebar-logo-text" style="min-width:0;">
-        <p id="sb-dept" style="color:#c4b5fd;font-size:12px;font-weight:700;margin:0;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">กลุ่มสาระคณิตศาสตร์</p>
+        <p id="sb-dept" style="color:#c4b5fd;font-size:12px;font-weight:700;margin:0;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ระบบแลกคาบและจัดสอนแทน</p>
         <p id="sb-school" style="color:rgba(255,255,255,.45);font-size:10.5px;font-weight:400;margin:0;">โรงเรียนบุญวัฒนา</p>
       </div>
     </div>
     <div id="sidebar-nav" style="flex:1;overflow-y:auto;padding:10px 0;">
       <div id="nav-public">
         <p class="nav-label">ทั่วไป</p>
-        <div class="nav-item active" data-nav="home" onclick="App.navTo('home')">
+        <div class="nav-item active" data-nav="dash" onclick="App.navTo('dash')">
+          <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
+          <span class="nav-text">แดชบอร์ด</span>
+        </div>
+        <div class="nav-item" data-nav="home" onclick="App.navTo('home')">
           <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
           <span class="nav-text">ตารางสอนแทนวันนี้</span>
         </div>
@@ -365,12 +706,20 @@
           <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
           <span class="nav-text">สถิติของฉัน</span>
         </div>
+        <div class="nav-item" data-nav="swap" onclick="App.navTo('swap')">
+          <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
+          <span class="nav-text">แลกคาบ</span><span id="nav-swap-badge" class="badge badge-pending" style="display:none;margin-left:auto;font-size:10px;padding:1px 7px;"></span>
+        </div>
       </div>
       <div id="nav-admin" style="display:none;">
         <p class="nav-label">ผู้ดูแล</p>
         <div class="nav-item" data-nav="admin-assign" onclick="App.navTo('admin-assign')">
           <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
           <span class="nav-text">จัดสอนแทน</span>
+        </div>
+        <div class="nav-item" data-nav="admin-ack" onclick="App.navTo('admin-ack')">
+          <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+          <span class="nav-text">ติดตามการรับทราบ</span>
         </div>
         <div class="nav-item" data-nav="admin-overall" onclick="App.navTo('admin-overall')">
           <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
@@ -383,6 +732,14 @@
         <div class="nav-item" data-nav="admin-teachers" onclick="App.navTo('admin-teachers')">
           <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           <span class="nav-text">จัดการครู</span>
+        </div>
+        <div class="nav-item" data-nav="admin-tools" onclick="App.navTo('admin-tools')">
+          <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span>
+          <span class="nav-text">ตรวจรายการซ้ำ</span>
+        </div>
+        <div class="nav-item" data-nav="admin-audit" onclick="App.navTo('admin-audit')">
+          <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
+          <span class="nav-text">ประวัติการแก้ไข</span>
         </div>
       </div>
     </div>
@@ -408,7 +765,7 @@
         <button id="hamburger" onclick="App.toggleSidebar()" title="เปิด/ปิดเมนู">
           <span></span><span></span><span></span>
         </button>
-        <h2 id="dash-title" style="font-size:16px;font-weight:700;color:var(--text-1);margin:0;letter-spacing:-.01em;">ตารางสอนแทนวันนี้</h2>
+        <h2 id="dash-title" style="font-size:16px;font-weight:700;color:var(--text-1);margin:0;letter-spacing:-.01em;">แดชบอร์ด</h2>
         <span id="header-sem" style="font-size:11.5px;color:var(--text-3);font-weight:500;background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:99px;"></span>
       </div>
       <div id="header-actions" style="display:flex;gap:8px;"></div>
@@ -417,8 +774,24 @@
     <!-- Panels -->
     <div id="main-content">
 
+      <!-- DASHBOARD (หน้าแรก) -->
+      <div id="panel-dash" class="panel">
+        <div class="dx-hero">
+          <div>
+            <p class="dx-kicker" id="dx-kicker">ภาพรวมระบบ</p>
+            <h1 class="dx-title">ระบบแลกคาบและจัดสอนแทน</h1>
+            <p class="dx-sub" id="dx-sub">กำลังโหลดข้อมูล…</p>
+          </div>
+          <div class="dx-hero-act">
+            <button id="dx-login-cta" class="btn btn-gold" onclick="App.goLogin()" style="display:none;">เข้าสู่ระบบเพื่อดูข้อมูลของคุณ →</button>
+            <button class="btn btn-secondary" onclick="App.navTo('home')">ตารางสอนแทนวันนี้</button>
+          </div>
+        </div>
+        <div id="dx-body"><div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลดข้อมูล...</p></div></div>
+      </div>
+
       <!-- HOME -->
-      <div id="panel-home" class="panel active">
+      <div id="panel-home" class="panel">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
           <span id="home-date-label" style="font-size:16px;font-weight:700;color:var(--text-1);letter-spacing:-.01em;"></span>
           <input id="home-date" type="date" style="display:none;">
@@ -467,6 +840,97 @@
           <div id="us-list-body" style="padding:6px 0;">
             <div class="empty-state"><div class="icon">📊</div><p>เลือกช่วงเวลาแล้วกด ค้นหา</p></div>
           </div>
+        </div>
+      </div>
+
+      <!-- SWAP (แลกคาบ) -->
+      <div id="panel-swap" class="panel">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="chip active" id="swap-tab-find" onclick="App.swapTab('find')">🔍 ค้นหาคู่แลก</button>
+          <button class="chip" id="swap-tab-list" onclick="App.swapTab('list')">📨 คำขอแลกคาบ <span id="swap-tab-badge" class="badge badge-pending" style="display:none;margin-left:4px;"></span></button>
+        </div>
+
+        <div id="swap-view-find">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+              <h3 style="font-size:14.5px;font-weight:700;color:var(--text-1);margin:0 0 4px;">🔄 หาครูที่แลกคาบกับคุณได้</h3>
+              <p style="font-size:12.5px;color:var(--text-2);margin:0 0 12px;line-height:1.7;">
+                กติกา: <b>ระดับชั้น/ห้องของคาบต้องตรงกัน</b> (เช่น 5/3 ↔ 5/3) · <b>ทั้งสองคนต้องว่างในคาบของอีกฝ่าย</b> ·
+                ถ้าไม่มีคู่ที่แลกได้ ให้ <b>ส่งต่อกลุ่มสาระจัดครูสอนแทน</b>
+              </p>
+              <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <div id="swap-teacher-wrap" style="display:none;"><label class="form-label">ครูที่ต้องการแลกคาบ</label>
+                  <select id="swap-teacher" class="form-input" style="width:230px;"></select></div>
+                <div><label class="form-label">วันที่ไม่อยู่ (ที่ต้องการแลก)</label>
+                  <input id="swap-date" type="date" class="form-input" style="width:170px;" onchange="App.updateSwapDayBadge()"></div>
+                <div id="swap-day-badge" style="font-size:13px;font-weight:700;align-self:flex-end;padding-bottom:2px;"></div>
+                <div><label class="form-label">สาเหตุ</label>
+                  <select id="swap-reason" class="form-input" style="width:180px;"></select></div>
+              </div>
+              <div style="margin-top:12px;">
+                <label class="form-label">วันลาอื่น ๆ ในรอบนี้ (ถ้ามี — ระบบจะไม่แนะนำให้ไปสอนคืนในวันที่ลา)</label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <input id="swap-extra-date" type="date" class="form-input" style="width:170px;">
+                  <button onclick="App.addSwapLeaveDate()" class="btn btn-secondary btn-sm">➕ เพิ่มวัน</button>
+                  <span id="swap-leave-chips"></span>
+                </div>
+              </div>
+              <div style="margin-top:14px;"><button onclick="App.loadSwap()" class="btn btn-primary">🔍 ตรวจสอบทุกคาบ</button></div>
+            </div>
+            <div id="swap-my-periods" style="padding:0 20px;"></div>
+          </div>
+          <div id="swap-body">
+            <div class="empty-state"><div class="icon">🔄</div><p>เลือกวันที่แล้วกด ตรวจสอบทุกคาบ</p></div>
+          </div>
+        </div>
+
+        <div id="swap-view-list" style="display:none;">
+          <div class="card">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <h3 style="font-size:14.5px;font-weight:700;color:var(--text-1);margin:0;">📨 คำขอแลกคาบ</h3>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select id="swap-list-scope" class="form-input" style="width:190px;" onchange="App.loadSwapList()">
+                  <option value="mine">ของฉัน</option>
+                </select>
+                <button onclick="App.loadSwapList()" class="btn btn-secondary btn-sm btn-icon">🔄</button>
+              </div>
+            </div>
+            <div id="swap-list-body" style="overflow-x:auto;padding:6px 0;"><div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN: TOOLS (ตรวจรายการซ้ำ) -->
+      <div id="panel-admin-tools" class="panel">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <h3 style="font-size:14.5px;font-weight:700;color:var(--text-1);margin:0 0 6px;">🧹 ตรวจและล้างรายการสอนแทนที่ซ้ำ</h3>
+            <p style="font-size:12.5px;color:var(--text-2);margin:0 0 12px;line-height:1.6;">
+              ใช้เมื่อเคยกดบันทึกซ้ำจนมีรายการ Active ซ้อนกัน ระบบจะ<b>เก็บรายการล่าสุดไว้</b> แล้วยกเลิกรายการเก่าที่ซ้ำ (ไม่ลบออกจากชีต)
+            </p>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+              <div><label class="form-label">เจาะจงวันที่ (เว้นว่าง = ทั้งหมด)</label>
+                <input id="dup-date" type="date" class="form-input" style="width:170px;"></div>
+              <button onclick="App.scanDuplicates()" class="btn btn-primary btn-sm">🔍 ตรวจสอบ</button>
+              <button onclick="document.getElementById('dup-date').value=''; App.scanDuplicates();" class="btn btn-secondary btn-sm">ตรวจทั้งหมด</button>
+            </div>
+          </div>
+        </div>
+        <div id="dup-body"><div class="empty-state"><div class="icon">🧹</div><p>กด ตรวจสอบ เพื่อค้นหารายการซ้ำ</p></div></div>
+      </div>
+
+      <!-- ADMIN: AUDIT LOG -->
+      <div id="panel-admin-audit" class="panel">
+        <div class="card">
+          <div class="card-header">
+            <h3 style="font-size:14.5px;font-weight:700;color:var(--text-1);margin:0 0 10px;">📝 ประวัติการแก้ไข (Audit Log)</h3>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+              <div><label class="form-label">วันที่ (เว้นว่าง = ล่าสุด)</label><input id="audit-date" type="date" class="form-input" style="width:170px;"></div>
+              <div><label class="form-label">ค้นหา</label><input id="audit-q" class="form-input" style="width:200px;" placeholder="ชื่อ/การกระทำ/รายการ" oninput="App.renderAudit()"></div>
+              <button onclick="App.loadAudit()" class="btn btn-primary btn-sm">โหลด</button>
+            </div>
+          </div>
+          <div id="audit-body" style="overflow-x:auto;"><div class="empty-state"><div class="icon">📝</div><p>กด โหลด เพื่อดูประวัติ</p></div></div>
         </div>
       </div>
 
@@ -778,6 +1242,7 @@ const App = {
       this.state.uid   = sessionStorage.getItem('uid')  || '';
       this.state.role  = sessionStorage.getItem('role') || '';
       this.state.name  = sessionStorage.getItem('name') || '';
+      this.state.department = sessionStorage.getItem('department') || '';
     }
     // โหลด settings จาก sessionStorage ก่อน (เร็ว) แล้วค่อย fetch ใหม่ใน background
     const cached = sessionStorage.getItem('settings_cache');
@@ -812,14 +1277,13 @@ const App = {
 
   applySettings() {
     const s = this.state.settings;
-    document.getElementById('login-dept-name').textContent   = s.departmentName || '';
     document.getElementById('login-school-name').textContent = s.schoolName || '';
-    document.getElementById('sb-dept').textContent           = s.departmentName || '';
     document.getElementById('sb-school').textContent         = s.schoolName || '';
-    document.title = s.systemName || 'ระบบจัดสอนแทน';
+    document.title = 'ระบบแลกคาบและจัดสอนแทน';
     const sem = document.getElementById('header-sem');
     if (s.currentSemester && s.currentYear) sem.textContent = `ภาคเรียน ${s.currentSemester}/${s.currentYear}`;
-    if (s.enablePublicHome) document.getElementById('pub-home-link').style.display = 'block';
+    const pubLink = document.getElementById('pub-home-link');
+    if (s.enablePublicHome && pubLink) pubLink.style.display = 'block';
     ['us','as'].forEach(p => {
       const sel = document.getElementById(`${p}-fv-semester`);
       if (sel) {
@@ -835,7 +1299,7 @@ const App = {
 
   setDefaultDates() {
     const today = todayStr();
-    ['admin-ack-date','assign-date'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+    ['admin-ack-date','assign-date','swap-date'].forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = today; });
     ['us','as'].forEach(p => {
       const d = document.getElementById(`${p}-fv-day`); if (d) d.value = today;
       const m = document.getElementById(`${p}-fv-month`); if (m) m.value = today.slice(0,7);
@@ -907,7 +1371,7 @@ const App = {
     document.getElementById('page-dashboard').classList.add('active');
     this.setupNav();
     this.updateSidebarUser();
-    this.navTo('home');
+    this.navTo('dash');
   },
 
   goPubHome() {
@@ -915,7 +1379,7 @@ const App = {
     document.getElementById('page-dashboard').classList.add('active');
     this.setupNav();
     this.updateSidebarUser();
-    this.navTo('home');
+    this.navTo('dash');
   },
 
   setupNav() {
@@ -928,25 +1392,29 @@ const App = {
 
   updateSidebarUser() {
     document.getElementById('sb-name').textContent = this.state.name || this.state.uid || 'ผู้เยี่ยมชม';
-    document.getElementById('sb-role').textContent = this.state.role === 'admin' ? 'ผู้ดูแลระบบ' : this.state.role ? 'ครูผู้สอน' : 'ผู้เยี่ยมชม';
+    document.getElementById('sb-role').textContent = (this.state.role === 'admin' ? 'ผู้ดูแลระบบ' : this.state.role ? 'ครูผู้สอน' : 'ผู้เยี่ยมชม') + (this.state.role && this.state.department ? ' · ' + App.deptLabel(this.state.department) : '');
     document.getElementById('sb-avatar').textContent = (this.state.name || this.state.uid || '?')[0];
+    if (this.state.token) this.refreshSwapBadge();
   },
 
   navTo(navId) {
     if (window.innerWidth < 768) this.closeSidebar();
     document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.nav === navId));
-    const panelMap = { home:'panel-home', 'user-ack':'panel-user-ack', 'user-stats':'panel-user-stats', 'admin-assign':'panel-admin-assign', 'admin-ack':'panel-admin-ack', 'admin-stats':'panel-admin-stats', 'admin-overall':'panel-admin-overall', 'admin-schedule':'panel-admin-schedule', 'admin-teachers':'panel-admin-teachers' };
-    const titleMap  = { home:'ตารางสอนแทนวันนี้', 'user-ack':'รับทราบการสอนแทน', 'user-stats':'สถิติการสอนแทนของฉัน', 'admin-assign':'จัดสอนแทน', 'admin-ack':'รับทราบ (ผู้ดูแล)', 'admin-stats':'สถิติส่วนตัว', 'admin-overall':'ภาพรวมและรายงาน', 'admin-teachers':'จัดการครู' };
+    const panelMap = { dash:'panel-dash', home:'panel-home', 'user-ack':'panel-user-ack', 'user-stats':'panel-user-stats', 'admin-assign':'panel-admin-assign', 'admin-ack':'panel-admin-ack', 'admin-stats':'panel-admin-stats', 'admin-overall':'panel-admin-overall', 'admin-schedule':'panel-admin-schedule', 'admin-teachers':'panel-admin-teachers', 'swap':'panel-swap', 'admin-tools':'panel-admin-tools', 'admin-audit':'panel-admin-audit' };
+    const titleMap  = { dash:'แดชบอร์ด', home:'ตารางสอนแทนวันนี้', 'user-ack':'รับทราบการสอนแทน', 'user-stats':'สถิติการสอนแทนของฉัน', 'admin-assign':'จัดสอนแทน', 'admin-ack':'รับทราบ (ผู้ดูแล)', 'admin-stats':'สถิติส่วนตัว', 'admin-overall':'ภาพรวมและรายงาน', 'admin-teachers':'จัดการครู', 'swap':'แลกคาบ', 'admin-tools':'ตรวจรายการซ้ำ', 'admin-audit':'ประวัติการแก้ไข (Audit Log)' };
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     const pid = panelMap[navId]; if (pid) document.getElementById(pid).classList.add('active');
     document.getElementById('dash-title').textContent = titleMap[navId] || '';
-    if      (navId === 'home')             this.loadHome();
+    if      (navId === 'dash')             this.loadDashboard();
+    else if (navId === 'home')             this.loadHome();
     else if (navId === 'user-ack')         this.loadUserAck();
     else if (navId === 'admin-assign')     this.initAssign();
     else if (navId === 'admin-ack')        this.loadAdminAck();
     else if (navId === 'admin-overall')    this.buildOvDropdowns();
     else if (navId === 'admin-schedule')   this.initScheduleManager();
     else if (navId === 'admin-teachers')   this.loadTeacherManager();
+    else if (navId === 'swap')             this.initSwap();
+    else if (navId === 'admin-audit')      this.loadAudit();
   },
 
   async doLogin(e) {
@@ -962,16 +1430,17 @@ const App = {
     this.state.token = r.token; this.state.uid = r.uid; this.state.role = r.role; this.state.name = r.name;
     sessionStorage.setItem('token', r.token); sessionStorage.setItem('uid', r.uid);
     sessionStorage.setItem('role', r.role); sessionStorage.setItem('name', r.name);
+    this.state.department = r.department || ''; sessionStorage.setItem('department', this.state.department);
     this._initSessionTimeout();
     const postNav = this.state._postLoginNav;
     this.state._postLoginNav = null;
     if (postNav) { this.setupNav(); this.updateSidebarUser(); document.getElementById('page-login').style.display='none'; document.getElementById('page-dashboard').classList.add('active'); this.navTo(postNav); }
-    else this.goHome();
+    else { this.goHome(); try { this.showWelcome && this.showWelcome(); } catch(e) {} }
   },
 
   logout() { this.logoutNow('ออกจากระบบแล้ว'); },
   clearSession() {
-    this.state.token=''; this.state.uid=''; this.state.role=''; this.state.name='';
+    this.state.token=''; this.state.uid=''; this.state.role=''; this.state.name=''; this.state.department='';
     sessionStorage.clear();
     this._stopSessionTimer();
   },
@@ -1567,7 +2036,7 @@ const App = {
       g.rows.sort((a,b) => a.period - b.period).forEach((s) => {
         const cancelled = s.status === 'Cancelled';
         const noSub = !s.subId || s.subId === 'ไม่จัดสอนแทน';
-        const subCell = cancelled ? `<span style="color:var(--text-3);text-decoration:line-through;">${s.subName||'—'}</span>`
+        const subCell = (isSwapRowX(s) && !cancelled) ? `<b style="color:#059669;">🔄 ${s.subName}</b> <span class="badge badge-info">แลกคาบ</span>` : cancelled ? `<span style="color:var(--text-3);text-decoration:line-through;">${s.subName||'—'}</span>`
           : noSub ? `<span style="color:var(--text-3);">ไม่จัดสอนแทน</span>`
           : `<b style="color:#059669;">${s.subName}</b>`;
         const badge = cancelled
@@ -1575,7 +2044,8 @@ const App = {
           : noSub ? `<span class="badge badge-nosub">—</span>`
           : s.acknowledged ? `<span class="badge badge-ack">✔ รับทราบ</span>`
           : `<span class="badge badge-pending">⏳ รอ</span>`;
-        const editBtn = !cancelled
+        const isSwapRow = /^แลกคาบ/.test(s.reason||'');
+        const editBtn = (!cancelled && !isSwapRow)
           ? `<button onclick="App.quickEditSub(${s.rowId},'${s.subId||''}','${g.absentName}',${s.period},'${s.subjectCode||''}','${s.room||''}','${g.absentId}','${s.building||''}')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 9px;" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`
           : '';
         const rowStyle = cancelled ? ' style="opacity:.45;"' : '';
@@ -2037,27 +2507,29 @@ const App = {
     const r = await this.api({ action:'saveSubs', data:JSON.stringify(data) });
     btn.disabled = false; btn.textContent = '✔ ยืนยันบันทึก';
     if (!r.ok) {
-      // GAS อาจบันทึกสำเร็จแต่ response กลับมาไม่ครบ — โหลดตรวจสอบก่อน
-      await this.loadAssignExisting();
-      const saved = document.getElementById('assign-existing')?.style.display !== 'none';
-      if (saved) {
-        this.toast('บันทึกเรียบร้อย (response ขาดหาย — ข้อมูลอยู่ครบ)', 'success');
-      } else {
-        this.toast('บันทึกไม่สำเร็จ: ' + r.err, 'error');
-        return;
-      }
-    } else {
-      this.toast(`บันทึกสำเร็จ ${r.count} รายการ`, 'success');
+      // v4: เซิร์ฟเวอร์ตรวจซ้ำ/ชนคาบ/คาบที่แลกแล้ว และตอบข้อผิดพลาดชัดเจน — แสดงตามจริง ไม่ถือว่าสำเร็จ
+      this.toast('บันทึกไม่สำเร็จ: ' + r.err, 'error');
+      const warnEl = document.getElementById('assign-warnings');
+      if (warnEl) warnEl.innerHTML = `<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:10px 14px;color:#991b1b;font-size:13.5px;font-weight:600;">❌ ${this.esc(r.err)}</div>` + warnEl.innerHTML;
+      return;
     }
+    this.toast(r.message || `บันทึกสำเร็จ ${r.count} รายการ`, 'success');
     document.getElementById('assign-summary').style.display = 'none';
     this.state.pendingAssignments = null;
-    // เรียง blocks ตาม teacher ID ก่อน re-render
-    this.state.absentBlocks.sort((a,b) => a.teacherId.localeCompare(b.teacherId,'th',{numeric:true}));
-    const wrap = document.getElementById('absent-blocks-wrap');
-    wrap.innerHTML = '';
-    this.state.absentBlocks.forEach(b => { const el = document.createElement('div'); el.id = 'absent-block-'+b.id; wrap.appendChild(el); this.renderBlock(b.id); });
-    // รีเฟรชตารางที่จัดเสร็จแล้ว และ scroll ลงไปให้เห็น
+    // ล้างฟอร์มทั้งหมดหลังบันทึก กันบันทึกครูคนเดิมซ้ำรอบถัดไป
+    this.state.absentBlocks = []; this.state.absentBlockId = 0; this.state.dayLoad = {};
+    document.getElementById('absent-blocks-wrap').innerHTML = '';
+    document.getElementById('assign-actions').style.display = 'none';
     await this.loadAssignExisting();
+    // คำเตือนจากเซิร์ฟเวอร์ (เช่น สอนติดกัน/ข้ามอาคาร/ชนกับภารกิจ) — บันทึกแล้วแต่ควรทราบ
+    document.getElementById('assign-saved-warn')?.remove();
+    if (r.warnings && r.warnings.length) {
+      const box = document.createElement('div'); box.id = 'assign-saved-warn';
+      box.className = 'card'; box.style.cssText = 'margin-bottom:16px;padding:14px 18px;background:#fffbeb;border-color:#fde68a;';
+      box.innerHTML = `<p style="margin:0 0 6px;font-weight:700;color:#92400e;">⚠️ บันทึกแล้ว แต่มี ${r.warnings.length} ข้อที่ควรตรวจสอบ <span style="cursor:pointer;float:right;" onclick="this.closest('#assign-saved-warn').remove()">✕</span></p>` +
+        r.warnings.map(w => `<div style="font-size:13px;color:#78350f;margin-top:3px;">• ${this.esc(typeof w === 'string' ? w : (w.msg || JSON.stringify(w)))}</div>`).join('');
+      document.getElementById('assign-existing').before(box);
+    }
     const existEl = document.getElementById('assign-existing');
     if (existEl) existEl.scrollIntoView({ behavior:'smooth', block:'start' });
   },
@@ -2541,9 +3013,449 @@ const App = {
     this.initScheduleManager(); // reload options
   },
 
-  showLoading(show) { /* disabled */ },
+  // ═══════════════════════════════════════════════════════
+  //  แลกคาบ (v4) — ใช้กับ Code.gs v4
+  // ═══════════════════════════════════════════════════════
+  _swap: { data:null, sel:{}, leave:[], chk:null, ctx:null },
+  _swapList: [],
+
+  esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+
+  async initSwap() {
+    const isAdmin = this.state.role === 'admin';
+    const dEl = document.getElementById('swap-date');
+    if (dEl && !dEl.value) dEl.value = todayStr();
+    const rs = document.getElementById('swap-reason');
+    if (rs && !rs.options.length) rs.innerHTML = ['ลาป่วย','ลากิจ','ราชการ','อบรม/สัมมนา','อื่นๆ'].map(r => `<option value="${r}">${r}</option>`).join('');
+    const wrap = document.getElementById('swap-teacher-wrap');
+    if (wrap) wrap.style.display = isAdmin ? '' : 'none';
+    if (isAdmin) {
+      await this.loadTeacherCache();
+      const sel = document.getElementById('swap-teacher');
+      if (sel && !sel.options.length) {
+        sel.innerHTML = this.state.teachers.map(t => `<option value="${this.esc(t.id)}">${this.esc(t.fullName)} (${this.esc(t.id)})</option>`).join('');
+        if (this.state.teachers.some(t => t.id === this.state.uid)) sel.value = this.state.uid;
+      }
+    }
+    const sc = document.getElementById('swap-list-scope');
+    if (sc) sc.innerHTML = isAdmin
+      ? `<option value="pending">รออนุมัติ (ทั้งหมด)</option><option value="all">ทั้งหมด</option><option value="mine">ของฉัน</option>`
+      : `<option value="mine">ของฉัน</option>`;
+    this.updateSwapDayBadge();
+    this.renderSwapLeaveChips();
+    this.swapTab(this._swapTab || 'find');
+  },
+
+  swapTab(t) {
+    this._swapTab = t;
+    document.getElementById('swap-tab-find').classList.toggle('active', t === 'find');
+    document.getElementById('swap-tab-list').classList.toggle('active', t === 'list');
+    document.getElementById('swap-view-find').style.display = t === 'find' ? '' : 'none';
+    document.getElementById('swap-view-list').style.display = t === 'list' ? '' : 'none';
+    if (t === 'list') this.loadSwapList();
+  },
+
+  updateSwapDayBadge() {
+    const date = document.getElementById('swap-date').value;
+    const db = document.getElementById('swap-day-badge'); if (!db) return;
+    if (!date) { db.innerHTML = ''; return; }
+    const pal = DAY_PALETTES[this.getDayName(date)] || DEFAULT_PAL;
+    db.innerHTML = `<span style="background:${pal.bg};color:${pal.text};padding:4px 12px;border-radius:99px;border:1.5px solid ${pal.accent}55;">${pal.emoji} ${pal.label}</span>`;
+  },
+
+  addSwapLeaveDate() {
+    const v = document.getElementById('swap-extra-date').value;
+    if (!v) return;
+    if (!this._swap.leave.includes(v)) this._swap.leave.push(v);
+    this._swap.leave.sort();
+    document.getElementById('swap-extra-date').value = '';
+    this.renderSwapLeaveChips();
+  },
+  removeSwapLeaveDate(v) { this._swap.leave = this._swap.leave.filter(x => x !== v); this.renderSwapLeaveChips(); },
+  renderSwapLeaveChips() {
+    const el = document.getElementById('swap-leave-chips'); if (!el) return;
+    el.innerHTML = this._swap.leave.map(v => `<span class="period-pill">${this.thDateShort(v)} <span style="cursor:pointer;color:#dc2626;" onclick="App.removeSwapLeaveDate('${v}')">✕</span></span>`).join('');
+  },
+
+  swapTeacherId() {
+    return this.state.role === 'admin' ? (document.getElementById('swap-teacher').value || this.state.uid) : this.state.uid;
+  },
+
+  // วันที่จริงของ "วัน" ที่คืนคาบ — ใช้สัปดาห์เดียวกับวันลา
+  weekDateFor(dateStr, dayName) {
+    const names = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    const [y,m,d] = dateStr.split('-').map(Number);
+    const base = new Date(y, m-1, d);
+    const dow = base.getDay() || 7;                  // จันทร์=1 … อาทิตย์=7
+    const target = names.indexOf(dayName) || 7;
+    const t = new Date(y, m-1, d - dow + target);
+    return `${t.getFullYear()}-${pad2(t.getMonth()+1)}-${pad2(t.getDate())}`;
+  },
+
+  async loadSwap() {
+    const date = document.getElementById('swap-date').value;
+    if (!date) { this.toast('กรุณาเลือกวันที่','warn'); return; }
+    const teacherId = this.swapTeacherId();
+    const leave = [date].concat(this._swap.leave).filter((v,i,a) => a.indexOf(v) === i);
+    this.updateSwapDayBadge();
+    this.showLoading(true);
+    const r = await this.api({ action:'getSwapOptions', teacherId, date, leaveDates: leave.join(',') });
+    this.showLoading(false);
+    const body = document.getElementById('swap-body');
+    const mine = document.getElementById('swap-my-periods');
+    if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; mine.innerHTML = ''; return; }
+    this._swap.data = r; this._swap.sel = {};
+    mine.innerHTML = '';
+    this.renderSwapResult();
+  },
+
+  renderSwapResult() {
+    const r = this._swap.data; const body = document.getElementById('swap-body');
+    if (!r.periods || !r.periods.length) {
+      body.innerHTML = `<div class="empty-state"><div class="icon">🗓</div><p>${this.esc(r.note || 'ไม่พบคาบสอนในวันนี้')}</p></div>`; return;
+    }
+    const s = r.summary || {};
+    let html = `<div class="card" style="margin-bottom:14px;padding:14px 18px;">
+      <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--text-1);">${this.esc(r.teacherName)} <span style="font-weight:500;color:var(--text-2);font-size:13px;">· ${this.thDateFull(r.date)}${r.department?' · '+this.esc(r.department):''}</span></p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:10px;">
+        ${this.statBox('คาบทั้งหมด', s.total||0, '#ede9fe', 'var(--primary)')}
+        ${this.statBox('แลกได้', s.swappable||0, '#d1fae5', 'var(--success)')}
+        ${this.statBox('ต้องส่งกลุ่มสาระ', s.needSubstitute||0, '#fee2e2', 'var(--danger)')}
+        ${this.statBox('มีผู้สอนแล้ว', s.covered||0, '#f1f5f9', 'var(--text-2)')}
+      </div>
+      ${r.note ? `<p style="margin:10px 0 0;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;">⚠️ ${this.esc(r.note)}</p>` : ''}
+    </div>`;
+
+    // แผนแนะนำ
+    html += `<div class="card" style="margin-bottom:14px;overflow:hidden;"><div class="card-header"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--text-1);">✨ แผนแนะนำ (ใช้ครูน้อยที่สุด ไม่ใช้คาบคืนซ้ำ)</h3></div>
+      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>คาบ</th><th>ห้อง</th><th>แนะนำ</th><th>ไปสอนคืน</th><th></th></tr></thead><tbody>`;
+    r.plan.forEach(pl => {
+      const per = r.periods.find(p => p.period === pl.period) || {};
+      let mid = '', ret = '—', act = '';
+      if (pl.mode === 'swap') {
+        mid = `<b style="color:var(--success);">แลกกับ ${this.esc(pl.fullName)}</b>`;
+        ret = `${this.esc(pl.returnDay)} คาบ ${pl.returnPeriod} · ${this.esc(pl.returnRoom||'')}${pl.returnOnLeaveDay?' <span class="badge badge-warn">ตรงวันลา</span>':''}`;
+        act = `<button onclick="App.usePlan(${pl.period})" class="btn btn-primary btn-sm">เลือกตามแผน</button>`;
+      } else if (pl.mode === 'covered') {
+        mid = `<span class="badge badge-ack">มีผู้สอนแล้ว</span>`;
+      } else {
+        mid = `<span class="badge badge-error">แลกไม่ได้ → ส่งกลุ่มสาระ</span>`;
+      }
+      html += `<tr><td><div class="period-circle">${pl.period}</div></td><td>${this.esc(per.room||'—')}</td><td>${mid}</td><td style="font-size:12.5px;">${ret}</td><td>${act}</td></tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+
+    // รายคาบ
+    r.periods.forEach((p, pi) => { html += `<div id="swap-period-${pi}">${this.swapPeriodHtml(pi)}</div>`; });
+    body.innerHTML = html;
+  },
+
+  swapPeriodHtml(pi) {
+    const r = this._swap.data; const p = r.periods[pi]; const sel = this._swap.sel[pi] || {};
+    const head = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="period-circle">${p.period}</div>
+        <div><b style="font-size:14px;">${this.esc(p.subjectCode||'—')} ${this.esc(p.subjectName||'')}</b>
+        <div style="font-size:12.5px;color:var(--text-2);">ห้อง ${this.esc(p.room||'—')}${p.roomNum?' · '+this.esc(p.roomNum):''}${p.timeRange?' · '+this.esc(p.timeRange):''}${p.building?' · อาคาร '+this.esc(p.building):''}</div></div>
+      </div>`;
+    let inner = '';
+    if (p.alreadyCovered) {
+      inner = `<p style="margin:10px 0 0;font-size:13px;"><span class="badge badge-ack">${p.alreadyCovered.isSwap?'แลกคาบแล้ว':'มีผู้สอนแทนแล้ว'}</span> โดย ${this.esc(p.alreadyCovered.subName)}</p>`;
+    } else if (p.status === 'substitute') {
+      const sb = p.substitute || {};
+      const cands = (sb.candidates||[]).map(c => `<span class="period-pill">${this.esc(c.fullName)} (วันนั้นสอน ${c.dayLoad} คาบ)</span>`).join('');
+      inner = `<div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;">
+        <p style="margin:0 0 6px;font-size:13px;color:#991b1b;font-weight:600;">🔴 ${this.esc(sb.message||'แลกคาบไม่ได้')}</p>
+        ${sb.headTeacher?`<p style="margin:0 0 6px;font-size:12.5px;color:var(--text-2);">แจ้งหัวหน้ากลุ่มสาระ: <b>${this.esc(sb.headTeacher)}</b></p>`:''}
+        ${cands?`<p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-2);">ครูในกลุ่มที่ว่างคาบนี้:</p><div>${cands}</div>`:''}
+        ${this.state.role==='admin'?`<button onclick="App.goAssignFor('${r.date}','${this.esc(r.teacherId)}')" class="btn btn-outline btn-sm" style="margin-top:8px;">📝 ไปจัดสอนแทน</button>`:''}
+      </div>`;
+    } else {
+      const opts = p.options.slice(0, sel.showAll ? 50 : 4);
+      inner = `<div style="margin-top:10px;">` + opts.map((o, oi) => {
+        const isSel = sel.oi === oi;
+        const rets = o.returns.map((x, ri) =>
+          `<button class="ret-chip ${isSel && sel.ri === ri ? 'sel' : ''} ${x.onLeaveDay?'leave':''}" onclick="App.pickSwap(${pi},${oi},${ri})" title="${x.onLeaveDay?'ตรงกับวันที่คุณลา':''}">
+             ${this.esc(x.day)} คาบ ${x.period} · ${this.esc(x.room||'')}${x.onLeaveDay?' ⚠️':''}</button>`).join('');
+        return `<div class="swap-opt ${isSel?'sel':''}">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;">
+            <div><b style="font-size:14px;">${this.esc(o.fullName)}</b>
+              <span style="font-size:12px;color:var(--text-2);"> ${this.esc(o.teacherId)}${o.department?' · '+this.esc(o.department):''}</span>
+              ${o.sameDept===true?'<span class="badge badge-ack" style="margin-left:4px;">กลุ่มสาระเดียวกัน</span>':o.sameDept===false?'<span class="badge badge-info" style="margin-left:4px;">ต่างกลุ่มสาระ</span>':''}</div>
+            <span class="score-pill">${o.score} คะแนน</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-2);margin:5px 0;">${o.reasons.map(x => '• '+this.esc(x)).join('  ')}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-2);">เลือกคาบที่คุณจะไปสอนคืน:</div>
+          <div>${rets}</div>
+        </div>`;
+      }).join('') + (p.options.length > 4 && !sel.showAll ? `<button onclick="App.swapShowAll(${pi})" class="btn btn-secondary btn-sm">ดูทั้งหมด ${p.options.length} คน</button>` : '')
+        + (sel.oi !== undefined ? `<div style="margin-top:8px;"><button onclick="App.openSwapCheck(${pi})" class="btn btn-primary">ตรวจสอบและส่งคำขอ →</button></div>` : '')
+        + `</div>`;
+    }
+    return `<div class="card" style="margin-bottom:12px;padding:14px 18px;">${head}${inner}</div>`;
+  },
+
+  rerenderSwapPeriod(pi) { const el = document.getElementById('swap-period-'+pi); if (el) el.innerHTML = this.swapPeriodHtml(pi); },
+  swapShowAll(pi) { (this._swap.sel[pi] = this._swap.sel[pi] || {}).showAll = true; this.rerenderSwapPeriod(pi); },
+  pickSwap(pi, oi, ri) {
+    const prev = this._swap.sel[pi] || {};
+    this._swap.sel[pi] = { oi, ri, showAll: prev.showAll };
+    this.rerenderSwapPeriod(pi);
+  },
+  usePlan(period) {
+    const r = this._swap.data; const pl = r.plan.find(x => x.period === period); if (!pl || pl.mode !== 'swap') return;
+    const pi = r.periods.findIndex(p => p.period === period);
+    const oi = r.periods[pi].options.findIndex(o => o.teacherId === pl.teacherId);
+    if (oi < 0) return;
+    const ri = r.periods[pi].options[oi].returns.findIndex(x => x.day === pl.returnDay && x.period === pl.returnPeriod);
+    this._swap.sel[pi] = { oi, ri: Math.max(0, ri), showAll: oi >= 4 };
+    this.rerenderSwapPeriod(pi);
+    this.openSwapCheck(pi);
+  },
+
+  async goAssignFor(date, teacherId) {
+    this.navTo('admin-assign');
+    const el = document.getElementById('assign-date'); el.value = date;
+    await this.initAssign();
+    const id = ++this.state.absentBlockId;
+    this.state.absentBlocks.push({ id, teacherId, reason: document.getElementById('swap-reason').value || '', schedule:null, assignments:{} });
+    this.renderBlock(id);
+    document.getElementById('assign-actions').style.display = 'flex';
+    await this.loadAbsentSchedule(id);
+  },
+
+  // ── ตรวจก่อนส่งคำขอ ──
+  async openSwapCheck(pi) {
+    const r = this._swap.data; const sel = this._swap.sel[pi]; if (!sel) return;
+    const p = r.periods[pi]; const o = p.options[sel.oi]; const ret = o.returns[sel.ri];
+    this._swap.ctx = { pi, period:p.period, teacherId:r.teacherId, otherId:o.teacherId, otherName:o.fullName,
+                       date:r.date, retDay:ret.day, retPeriod:ret.period,
+                       retDate:this.weekDateFor(r.date, ret.day) };
+    const html = `<div id="swap-modal" style="background:rgba(0,0,0,.55);position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px;" onclick="if(event.target===this)App.closeSwapModal()">
+      <div style="background:#fff;border-radius:16px;padding:22px 24px;width:560px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;">🔄 ตรวจสอบการแลกคาบ</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:var(--text-2);">คาบ ${p.period} (${this.thDateShort(r.date)}) ห้อง ${this.esc(p.room||'')} ⇄ ${this.esc(o.fullName)}</p>
+        <label class="form-label">วันที่ไปสอนคืน (${this.esc(ret.day)} คาบ ${ret.period})</label>
+        <input id="swap-ret-date" type="date" class="form-input" style="width:180px;margin-bottom:12px;" value="${this._swap.ctx.retDate}" onchange="App.swapRecheck()">
+        <div id="swap-check-body"><div class="empty-state" style="padding:20px;"><p>กำลังตรวจสอบ...</p></div></div>
+      </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    this.swapRecheck();
+  },
+  closeSwapModal() { document.getElementById('swap-modal')?.remove(); },
+
+  async swapRecheck() {
+    const c = this._swap.ctx; if (!c) return;
+    c.retDate = document.getElementById('swap-ret-date').value;
+    const el = document.getElementById('swap-check-body');
+    el.innerHTML = `<div class="empty-state" style="padding:20px;"><p>กำลังตรวจสอบ...</p></div>`;
+    const r = await this.api({ action:'checkSwap', teacherId:c.teacherId, date:c.date, period:c.period, otherId:c.otherId, returnDate:c.retDate, returnPeriod:c.retPeriod });
+    if (!r.ok) { el.innerHTML = `<p style="color:var(--danger);font-weight:600;">${this.esc(r.err)}</p>`; return; }
+    this._swap.chk = r;
+    const isAdmin = this.state.role === 'admin';
+    const OVR = { meFree:'ข้ามเงื่อนไข: ผมว่างในคาบที่ไปสอนคืน', otherFree:'ข้ามเงื่อนไข: คู่แลกว่างในคาบนี้', meNotAbsentReturn:'ข้ามเงื่อนไข: ผมอยู่ปฏิบัติงานวันที่คืน' };
+    const failedOvr = r.checks.filter(x => !x.pass && OVR[x.key]);
+    const failedHard = r.checks.filter(x => !x.pass && !OVR[x.key]);
+    let html = r.checks.map(x => `<div class="chk-row"><span>${x.pass?'✅':'❌'}</span><span style="color:${x.pass?'var(--text-1)':'#991b1b'};font-weight:${x.pass?400:600};">${this.esc(x.msg)}</span></div>`).join('');
+    if (r.preview) {
+      html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+        <div style="background:var(--surface);border-radius:10px;padding:10px 12px;"><b style="font-size:12px;">ก่อนแลก</b>${r.preview.before.map(x=>`<div style="font-size:12.5px;margin-top:4px;">${this.esc(x)}</div>`).join('')}</div>
+        <div style="background:#ecfdf5;border-radius:10px;padding:10px 12px;"><b style="font-size:12px;color:#065f46;">หลังแลก</b>${r.preview.after.map(x=>`<div style="font-size:12.5px;margin-top:4px;">${this.esc(x)}</div>`).join('')}</div></div>`;
+    }
+    let canSend = r.valid;
+    if (r.valid) {
+      html += `<p style="margin:10px 0;font-weight:700;color:var(--success);">🟢 สามารถแลกได้</p>`;
+    } else {
+      html += `<p style="margin:10px 0 4px;font-weight:700;color:var(--danger);">🔴 ไม่สามารถแลกได้</p>`;
+      if (failedHard.length || !isAdmin) html += `<p style="margin:0 0 8px;font-size:12.5px;color:var(--text-2);">${this.esc(r.advice||'ให้ส่งต่อกลุ่มสาระจัดครูสอนแทน')}</p>`;
+      if (isAdmin && failedOvr.length && !failedHard.length) {
+        html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: ข้ามเงื่อนไขได้ (ต้องระบุเหตุผล)</p>
+          ${failedOvr.map(x => `<label style="display:flex;gap:6px;font-size:12.5px;margin-bottom:4px;"><input type="checkbox" class="swap-ovr" value="${x.key}" onchange="App.swapOvrChanged()"> ${OVR[x.key]}</label>`).join('')}
+          <input id="swap-ovr-reason" class="form-input" style="margin-top:6px;" placeholder="เหตุผล เช่น นักเรียนไปทำกิจกรรมคณะสี" oninput="App.swapOvrChanged()"></div>`;
+      }
+      canSend = false;
+    }
+    html += `<label class="form-label" style="margin-top:8px;">หมายเหตุ (ถ้ามี)</label><input id="swap-note" class="form-input" style="margin-bottom:10px;">`;
+    if (isAdmin) html += `<label style="display:flex;gap:6px;font-size:13px;margin-bottom:10px;"><input type="checkbox" id="swap-agreed"> คู่แลกตกลงกันแล้ว — บันทึกและอนุมัติทันที</label>`;
+    html += `<div style="display:flex;gap:8px;"><button id="swap-send-btn" onclick="App.submitSwap()" class="btn btn-primary" ${canSend?'':'disabled'}>📨 ${isAdmin?'บันทึก/ส่งคำขอ':'ส่งคำขอแลกคาบ'}</button>
+      <button onclick="App.closeSwapModal()" class="btn btn-secondary">ปิด</button></div>`;
+    el.innerHTML = html;
+  },
+
+  swapOvrChanged() {
+    const r = this._swap.chk; if (!r) return;
+    const checked = [...document.querySelectorAll('.swap-ovr:checked')].map(x => x.value);
+    const failedOvr = r.checks.filter(x => !x.pass).map(x => x.key);
+    const allCovered = failedOvr.every(k => checked.includes(k));
+    const reason = (document.getElementById('swap-ovr-reason')?.value || '').trim();
+    document.getElementById('swap-send-btn').disabled = !(allCovered && reason);
+  },
+
+  async submitSwap() {
+    const c = this._swap.ctx; const r = this._swap.chk; if (!c || !r) return;
+    const btn = document.getElementById('swap-send-btn'); btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+    const override = r.valid ? [] : [...document.querySelectorAll('.swap-ovr:checked')].map(x => x.value);
+    const data = { teacherId:c.teacherId, otherId:c.otherId, date:c.date, period:c.period, returnDate:c.retDate, returnPeriod:c.retPeriod,
+                   reason: document.getElementById('swap-reason').value, note: document.getElementById('swap-note').value.trim(),
+                   agreed: !!document.getElementById('swap-agreed')?.checked, override, overrideReason: (document.getElementById('swap-ovr-reason')?.value || '').trim() };
+    const res = await this.api({ action:'createSwap', data: JSON.stringify(data) });
+    if (!res.ok) { btn.disabled = false; btn.textContent = '📨 ส่งคำขอ'; this.toast(res.err, 'error'); return; }
+    this.closeSwapModal();
+    this.toast(res.message, 'success');
+    this.refreshSwapBadge();
+    // ปิดการ์ดคาบนี้ แล้วโหลดผลใหม่เพื่อให้สถานะอัปเดต
+    this.loadSwap();
+  },
+
+  // ── รายการคำขอ ──
+  async loadSwapList() {
+    const body = document.getElementById('swap-list-body');
+    const scope = document.getElementById('swap-list-scope')?.value || 'mine';
+    body.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div>`;
+    const r = await this.api({ action:'listSwaps', scope });
+    if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; return; }
+    this._swapList = r.swaps || [];
+    if (!this._swapList.length) { body.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>ยังไม่มีคำขอแลกคาบ</p></div>`; return; }
+    const uid = this.state.uid.toUpperCase(); const isAdmin = this.state.role === 'admin';
+    const stBadge = s => ({ 'รอคู่แลกตอบรับ':'badge-pending','รอ Admin อนุมัติ':'badge-info','อนุมัติแล้ว':'badge-ack','คู่แลกปฏิเสธ':'badge-error','ไม่อนุมัติ':'badge-error','ยกเลิก':'badge-nosub' }[s] || 'badge-nosub');
+    let html = `<table class="tbl"><thead><tr><th>ผู้ขอ</th><th>คาบที่ขอแลก</th><th>คู่แลก</th><th>ไปสอนคืน</th><th>สถานะ</th><th></th></tr></thead><tbody>`;
+    this._swapList.forEach((x, i) => {
+      const acts = [];
+      if (x.otherId.toUpperCase() === uid && x.status === 'รอคู่แลกตอบรับ') {
+        acts.push(`<button onclick="App.respondSwap(${i},true)" class="btn btn-success btn-sm">ยอมรับ</button>`, `<button onclick="App.respondSwap(${i},false)" class="btn btn-secondary btn-sm">ปฏิเสธ</button>`);
+      }
+      if (isAdmin && x.status === 'รอ Admin อนุมัติ') {
+        acts.push(`<button onclick="App.approveSwap(${i},true)" class="btn btn-success btn-sm">อนุมัติ</button>`, `<button onclick="App.approveSwap(${i},false)" class="btn btn-secondary btn-sm">ไม่อนุมัติ</button>`);
+      }
+      const closed = ['ยกเลิก','คู่แลกปฏิเสธ','ไม่อนุมัติ'].includes(x.status);
+      if (!closed && (isAdmin || (x.requesterId.toUpperCase() === uid && x.status !== 'อนุมัติแล้ว'))) {
+        acts.push(`<button onclick="App.cancelSwap(${i})" class="btn btn-danger btn-sm">ยกเลิก</button>`);
+      }
+      const note = [x.leaveReason && 'สาเหตุ: '+x.leaveReason, x.otherNote && 'คู่แลก: '+x.otherNote, x.approverNote && 'ผู้อนุมัติ: '+x.approverNote, x.override && 'ข้ามเงื่อนไข: '+x.override, x.note].filter(Boolean).join(' · ');
+      html += `<tr>
+        <td><b>${this.esc(x.requesterName)}</b><div style="font-size:11px;color:var(--text-3);">#${this.esc(x.exchangeId)}</div></td>
+        <td style="font-size:12.5px;">${this.thDateShort(x.date)} คาบ ${x.period}<br><span style="color:var(--text-2);">${this.esc(x.room||'')} ${this.esc(x.subjectCode||'')}</span></td>
+        <td><b>${this.esc(x.otherName)}</b></td>
+        <td style="font-size:12.5px;">${this.thDateShort(x.returnDate)} คาบ ${x.returnPeriod}<br><span style="color:var(--text-2);">${this.esc(x.returnRoom||'')}</span></td>
+        <td><span class="badge ${stBadge(x.status)}">${this.esc(x.status)}</span>${note?`<div style="font-size:11px;color:var(--text-2);margin-top:4px;max-width:220px;">${this.esc(note)}</div>`:''}</td>
+        <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">${acts.join('')}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    body.innerHTML = html;
+    this.setSwapBadge(r.waitingForMe || 0, null);
+  },
+
+  async respondSwap(i, yes) {
+    const x = this._swapList[i]; if (!x) return;
+    let note = '';
+    if (!yes) { note = prompt('เหตุผลที่ปฏิเสธ (ไม่บังคับ)') ?? null; if (note === null) return; }
+    else if (!confirm(`ยอมรับแลกคาบ?\n• ${x.requesterName} ให้คุณสอนคาบ ${x.period} (${this.thDateShort(x.date)}) ห้อง ${x.room||''}\n• คุณไม่ต้องสอนคาบ ${x.returnPeriod} (${this.thDateShort(x.returnDate)}) ห้อง ${x.returnRoom||''} — ${x.requesterName} ไปสอนแทน`)) return;
+    this.showLoading(true);
+    const r = await this.api({ action:'respondSwap', exchangeId:x.exchangeId, accept:yes, note });
+    this.showLoading(false);
+    if (!r.ok) { this.toast(r.err, 'error'); return; }
+    this.toast(r.message, 'success'); this.loadSwapList(); this.refreshSwapBadge();
+  },
+  async approveSwap(i, yes) {
+    const x = this._swapList[i]; if (!x) return;
+    let note = '';
+    if (!yes) { note = prompt('เหตุผลที่ไม่อนุมัติ') ?? null; if (note === null) return; }
+    else if (!confirm(`อนุมัติการแลกคาบระหว่าง ${x.requesterName} ⇄ ${x.otherName}?`)) return;
+    this.showLoading(true);
+    const r = await this.api({ action:'approveSwap', exchangeId:x.exchangeId, approve:yes, note });
+    this.showLoading(false);
+    if (!r.ok) { this.toast(r.err, 'error'); return; }
+    this.toast(r.message, 'success'); this.loadSwapList(); this.refreshSwapBadge();
+  },
+  async cancelSwap(i) {
+    const x = this._swapList[i]; if (!x) return;
+    const extra = x.status === 'อนุมัติแล้ว' ? '\n(จะยกเลิกรายการสอนแทนของทั้งสองฝ่ายด้วย)' : '';
+    if (!confirm(`ยกเลิกคำขอแลกคาบ #${x.exchangeId}?${extra}`)) return;
+    const note = prompt('เหตุผล (ไม่บังคับ)') ?? ''; 
+    this.showLoading(true);
+    const r = await this.api({ action:'cancelSwap', exchangeId:x.exchangeId, note });
+    this.showLoading(false);
+    if (!r.ok) { this.toast(r.err, 'error'); return; }
+    this.toast(r.message, 'success'); this.loadSwapList(); this.refreshSwapBadge();
+  },
+
+  setSwapBadge(n, pending) {
+    this._swapBadge = Object.assign(this._swapBadge || {}, { me: n !== null ? n : (this._swapBadge||{}).me, pend: pending !== null ? pending : (this._swapBadge||{}).pend });
+    const total = (this._swapBadge.me || 0) + (this._swapBadge.pend || 0);
+    ['nav-swap-badge','swap-tab-badge'].forEach(id => { const el = document.getElementById(id); if (el) { el.style.display = total ? '' : 'none'; el.textContent = total; } });
+  },
+  async refreshSwapBadge() {
+    if (!this.state.token) return;
+    const r = await this.api({ action:'listSwaps', scope:'mine' });
+    if (r.ok) this.setSwapBadge(r.waitingForMe || 0, null);
+    if (this.state.role === 'admin') {
+      const p = await this.api({ action:'listSwaps', scope:'pending' });
+      if (p.ok) this.setSwapBadge(null, p.count || 0);
+    }
+  },
+
+  // ── ตรวจ/ล้างรายการซ้ำ ──
+  async scanDuplicates() {
+    const date = document.getElementById('dup-date').value;
+    this.showLoading(true);
+    const r = await this.api({ action:'scanDuplicates', date: date || '' });
+    this.showLoading(false);
+    const body = document.getElementById('dup-body');
+    if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; return; }
+    if (!r.groupCount) { body.innerHTML = `<div class="empty-state"><div class="icon">✨</div><p>ไม่พบรายการซ้ำ — ข้อมูลสะอาดดี</p></div>`; return; }
+    let html = `<div class="card" style="margin-bottom:14px;padding:14px 18px;background:#fef2f2;border-color:#fecaca;">
+      <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#991b1b;">พบ ${r.groupCount} คาบที่มีรายการซ้อนกัน — แถวส่วนเกิน ${r.extraRows} แถว</p>
+      <button onclick="App.cleanupDuplicates()" class="btn btn-danger">🧹 ล้างรายการซ้ำ ${r.extraRows} แถว</button></div>
+      <div class="card" style="overflow:hidden;"><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่</th><th>ครูที่ไม่อยู่</th><th>คาบ</th><th>ซ้ำ</th><th>เก็บไว้</th><th>จะยกเลิก</th></tr></thead><tbody>`;
+    r.duplicates.forEach(d => {
+      const drops = d.dropRows.map(x => `<div style="font-size:12px;color:#991b1b;">แถว ${x.rowId} · ${this.esc(x.subName||'—')}</div>`).join('');
+      html += `<tr><td style="white-space:nowrap;font-weight:600;color:var(--primary);">${this.thDateShort(d.date)}</td><td>${this.esc(d.absentName)}</td><td><div class="period-circle">${d.period}</div></td><td><span class="badge badge-error">${d.total} รายการ</span></td><td style="font-size:12px;color:#065f46;">แถว ${d.keepRow} · ${this.esc(d.keepSub||'—')}</td><td>${drops}</td></tr>`;
+    });
+    body.innerHTML = html + `</tbody></table></div></div>`;
+  },
+  async cleanupDuplicates() {
+    if (!confirm('ยืนยันล้างรายการซ้ำ?\n\nระบบเก็บรายการล่าสุดของแต่ละคาบไว้ และยกเลิกรายการเก่าที่ซ้ำ (ไม่ลบจากชีต)')) return;
+    const date = document.getElementById('dup-date').value;
+    this.showLoading(true);
+    const r = await this.api({ action:'cleanupDuplicates', date: date || '' });
+    this.showLoading(false);
+    if (!r.ok) { this.toast(r.err, 'error'); return; }
+    this.toast(r.message, 'success'); this.scanDuplicates();
+  },
+
+  // ── Audit Log ──
+  _audit: [],
+  async loadAudit() {
+    const date = document.getElementById('audit-date').value;
+    this.showLoading(true);
+    const r = await this.api({ action:'getAuditLog', date: date || '', limit: 300 });
+    this.showLoading(false);
+    if (!r.ok) { document.getElementById('audit-body').innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; return; }
+    this._audit = r.rows || [];
+    this.renderAudit();
+  },
+  renderAudit() {
+    const q = (document.getElementById('audit-q')?.value || '').toLowerCase().trim();
+    const rows = this._audit.filter(x => !q || Object.values(x).join(' ').toLowerCase().includes(q));
+    const body = document.getElementById('audit-body');
+    if (!rows.length) { body.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>ไม่พบรายการ</p></div>`; return; }
+    body.innerHTML = `<table class="tbl"><thead><tr><th>เวลา</th><th>ผู้ทำ</th><th>การกระทำ</th><th>รายการ</th><th>เดิม → ใหม่</th><th>เหตุผล</th></tr></thead><tbody>` +
+      rows.map(x => `<tr><td style="white-space:nowrap;font-size:12.5px;">${this.esc(x.time)}</td><td style="font-size:12.5px;"><b>${this.esc(x.user_name||x.user_id)}</b><div style="color:var(--text-3);font-size:11px;">${this.esc(x.user_id)}</div></td>
+        <td><span class="badge badge-info">${this.esc(x.action)}</span></td><td style="font-size:12.5px;">${this.esc(x.target)}</td>
+        <td style="font-size:12px;max-width:340px;">${x.before?`<span style="color:#991b1b;">${this.esc(x.before)}</span><br>→ `:''}<span style="color:#065f46;">${this.esc(x.after)}</span></td>
+        <td style="font-size:12px;color:var(--text-2);">${this.esc(x.reason)}</td></tr>`).join('') + `</tbody></table>`;
+  },
+
+  _loadCount: 0,
+  showLoading(show) {
+    this._loadCount = Math.max(0, this._loadCount + (show ? 1 : -1));
+    const el = document.getElementById('loading');
+    if (el) el.style.display = this._loadCount > 0 ? 'flex' : 'none';
+  },
 };
 
+function isSwapRowX(s) { return /^แลกคาบ/.test((s && s.reason) || ''); }
+function pad2(n) { return String(n).padStart(2,'0'); }
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -2570,6 +3482,314 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   App.init();
 });
+</script>
+<script id="luxe-js">
+/* LUXE — พื้นหลังกราฟิก · ริปเปิลคลิก · สปอตไลต์การ์ด · นับเลข · หน้ายินดีต้อนรับ */
+(function () {
+  /* ให้ overlay ของเมนูมือถืออยู่ใน stacking context เดียวกับ sidebar (กันเบลอทับเมนู) */
+  (function(){ const o=document.getElementById('sidebar-overlay'), d=document.getElementById('page-dashboard'); if(o&&d) d.appendChild(o); })();
+  'use strict';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(pointer: fine)').matches;
+
+  // ───────── พื้นหลัง ─────────
+  const stage = document.createElement('div');
+  stage.id = 'bg-stage';
+  stage.innerHTML = '<div class="bg-orb o1"></div><div class="bg-orb o2"></div><div class="bg-orb o3"></div><canvas id="bg-canvas"></canvas>';
+  document.body.prepend(stage);
+  const grain = document.createElement('div'); grain.id = 'bg-grain'; document.body.appendChild(grain);
+
+  const cv = document.getElementById('bg-canvas'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1, px = 0, py = 0, tx = 0, ty = 0, last = 0, visible = true;
+  const GOLD = (a) => `rgba(214,185,126,${a})`;
+  const cells = [], dust = [];
+  const CELL = 112;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dust.length = 0;
+    const n = Math.round(Math.min(70, W * H / 22000));
+    for (let i = 0; i < n; i++) dust.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.3 + .4, s: Math.random() * .12 + .03, p: Math.random() * 6.28, a: Math.random() * .35 + .1 });
+  }
+  addEventListener('resize', resize); resize();
+  if (fine) addEventListener('pointermove', (e) => { tx = e.clientX / W - .5; ty = e.clientY / H - .5; }, { passive: true });
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; if (visible) { last = performance.now(); requestAnimationFrame(frame); } });
+
+  function polygon(cx, cy, r, n, rot) {
+    const pts = [];
+    for (let i = 0; i < n; i++) { const a = rot + i * 6.28318 / n; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+    return pts;
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    px += (tx - px) * .04; py += (ty - py) * .04;
+
+    // 1) ตารางคาบสอน — เส้นละเอียดจางตามระยะจากแสง
+    const ox = px * -16, oy = py * -16;
+    const gx = W * .74, gy = H * .26, R = Math.max(W, H) * .85;
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, R);
+    g.addColorStop(0, GOLD(.16)); g.addColorStop(.55, GOLD(.045)); g.addColorStop(1, GOLD(0));
+    ctx.strokeStyle = g; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = (ox % CELL) - CELL; x < W + CELL; x += CELL) { ctx.moveTo(Math.round(x) + .5, 0); ctx.lineTo(Math.round(x) + .5, H); }
+    for (let y = (oy % CELL) - CELL; y < H + CELL; y += CELL) { ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); }
+    ctx.stroke();
+
+    // 2) ช่องคาบที่ค่อย ๆ สว่าง เหมือนคาบสอนถูกจัดลงตาราง
+    if (!reduce && (cells.length < 5) && Math.random() < .018) {
+      const cx = Math.floor(Math.random() * (W / CELL)), cy = Math.floor(Math.random() * (H / CELL));
+      cells.push({ cx, cy, born: t, life: 5200 + Math.random() * 3000, w: Math.random() < .3 ? 2 : 1 });
+    }
+    for (let i = cells.length - 1; i >= 0; i--) {
+      const c = cells[i], k = (t - c.born) / c.life;
+      if (k >= 1) { cells.splice(i, 1); continue; }
+      const e = Math.sin(k * Math.PI), x = c.cx * CELL + (ox % CELL), y = c.cy * CELL + (oy % CELL), w = CELL * c.w;
+      const gr = ctx.createLinearGradient(x, y, x + w, y + CELL);
+      gr.addColorStop(0, GOLD(.06 * e)); gr.addColorStop(1, GOLD(.01 * e));
+      ctx.fillStyle = gr; ctx.fillRect(x + 1, y + 1, w - 1, CELL - 1);
+      ctx.strokeStyle = GOLD(.5 * e); ctx.lineWidth = 1;
+      const L = 9; ctx.beginPath();
+      ctx.moveTo(x, y + L); ctx.lineTo(x, y); ctx.lineTo(x + L, y);
+      ctx.moveTo(x + w - L, y + CELL); ctx.lineTo(x + w, y + CELL); ctx.lineTo(x + w, y + CELL - L);
+      ctx.stroke();
+    }
+
+    // 3) การสร้างทางเรขาคณิต: วงกลมโปรแทรกเตอร์ + รูปหลายเหลี่ยมหมุนสวนทาง
+    const cx = W * .8 + px * 26, cy = H * .27 + py * 26, r = Math.min(W, H) * (W < 700 ? .42 : .36);
+    const tt = t * .00004 * (reduce ? 0 : 1);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = GOLD(.16); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.stroke();
+    ctx.strokeStyle = GOLD(.08); ctx.beginPath(); ctx.arc(cx, cy, r * .62, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.12, 0, 6.2832); ctx.setLineDash([2, 7]); ctx.strokeStyle = GOLD(.12); ctx.stroke(); ctx.setLineDash([]);
+    // ขีดองศา
+    ctx.beginPath();
+    for (let d = 0; d < 360; d += 6) {
+      const a = d * Math.PI / 180, L = d % 30 === 0 ? 14 : 6;
+      ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      ctx.lineTo(cx + Math.cos(a) * (r - L), cy + Math.sin(a) * (r - L));
+    }
+    ctx.strokeStyle = GOLD(.13); ctx.stroke();
+    const A = polygon(cx, cy, r, 5, -Math.PI / 2 + tt * 40), B = polygon(cx, cy, r * .62, 7, Math.PI / 2 - tt * 55);
+    ctx.strokeStyle = GOLD(.14); ctx.beginPath(); A.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
+    ctx.strokeStyle = GOLD(.1);  ctx.beginPath(); B.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
+    // ดาว {7/3}
+    ctx.strokeStyle = GOLD(.075); ctx.beginPath();
+    for (let i = 0; i < 7; i++) { const p = B[i], q = B[(i + 3) % 7]; ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+    ctx.stroke();
+    // เส้นโยงห้าเหลี่ยม → เจ็ดเหลี่ยม
+    ctx.strokeStyle = GOLD(.05); ctx.beginPath();
+    A.forEach((p, i) => { const q = B[(i * 7 / 5 | 0) % 7]; ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); });
+    ctx.stroke();
+    ctx.fillStyle = GOLD(.7);
+    A.concat(B).forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 1.7, 0, 6.2832); ctx.fill(); });
+    // จุดโคจร
+    const oa = t * .00018 * (reduce ? 0 : 1);
+    const ox2 = cx + Math.cos(oa) * r, oy2 = cy + Math.sin(oa) * r;
+    const og = ctx.createRadialGradient(ox2, oy2, 0, ox2, oy2, 16);
+    og.addColorStop(0, 'rgba(255,240,200,.95)'); og.addColorStop(.25, GOLD(.5)); og.addColorStop(1, GOLD(0));
+    ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox2, oy2, 16, 0, 6.2832); ctx.fill();
+
+    // 4) คลื่นไซน์ซ้อนเบา ๆ ด้านล่าง
+    ctx.lineWidth = 1;
+    [[.9, 22, .0105, .0009, .1], [.935, 14, .017, -.0007, .06]].forEach(([yy, amp, k, sp, al], j) => {
+      ctx.strokeStyle = GOLD(al); ctx.beginPath();
+      for (let x = 0; x <= W; x += 6) {
+        const y = H * yy + py * 10 * (j + 1) + Math.sin(x * k + t * sp * (reduce ? 0 : 1)) * amp + Math.sin(x * k * 2.3 + t * sp * 1.7) * amp * .3;
+        x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    });
+
+    // 5) ฝุ่นทอง
+    dust.forEach(d => {
+      if (!reduce) { d.y -= d.s; d.x += Math.sin(t * .0003 + d.p) * .08; if (d.y < -4) { d.y = H + 4; d.x = Math.random() * W; } }
+      const tw = .55 + .45 * Math.sin(t * .0012 + d.p);
+      ctx.fillStyle = GOLD(d.a * tw); ctx.beginPath(); ctx.arc(d.x + px * -10 * d.r, d.y, d.r, 0, 6.2832); ctx.fill();
+    });
+  }
+  function frame(now) {
+    if (!visible) return;
+    if (now - last > 16) { draw(now); last = now; }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  if (reduce) draw(0); else requestAnimationFrame(frame);
+
+  // ───────── ริปเปิลตอนคลิก ─────────
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('.btn, .chip, .nav-item, .ret-chip');
+    if (!el || el.disabled) return;
+    const r = el.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2;
+    const s = document.createElement('span'); s.className = 'ripple';
+    s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+    el.appendChild(s); setTimeout(() => s.remove(), 800);
+  }, { passive: true });
+
+  // ───────── สปอตไลต์ตามเมาส์บนการ์ด + แม่เหล็กเบา ๆ ที่ปุ่มหลัก ─────────
+  if (fine) {
+    document.addEventListener('pointermove', (e) => {
+      const c = e.target.closest && e.target.closest('.card, .stat-box, .swap-opt');
+      if (c) { const r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px'); }
+      const b = e.target.closest && e.target.closest('.btn-primary:not(.btn-sm), .btn-gold:not(.btn-sm)');
+      if (b && !b.disabled) {
+        const r = b.getBoundingClientRect();
+        const dx = (e.clientX - (r.left + r.width / 2)) / r.width, dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+        b.style.translate = `${dx * 5}px ${dy * 4 - 2}px`;
+      }
+    }, { passive: true });
+    document.addEventListener('pointerout', (e) => { const b = e.target.closest && e.target.closest('.btn-primary, .btn-gold'); if (b) b.style.translate = ''; }, { passive: true });
+  }
+
+  // ───────── นับเลขขึ้นเมื่อกล่องสถิติปรากฏ ─────────
+  function countUp(el) {
+    const txt = el.textContent.trim();
+    if (el.dataset.counted || !/^\d{1,5}$/.test(txt)) return;
+    el.dataset.counted = '1';
+    const n = +txt; if (n < 2 || reduce) return;
+    const t0 = performance.now(), dur = 900;
+    (function step(now) {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 4);
+      el.textContent = Math.round(n * e);
+      if (k < 1) requestAnimationFrame(step); else el.textContent = n;
+    })(t0);
+  }
+  new MutationObserver((ms) => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches && n.matches('.stat-num')) countUp(n);
+    n.querySelectorAll && n.querySelectorAll('.stat-num').forEach(countUp);
+  }))).observe(document.body, { childList: true, subtree: true });
+
+  // ───────── หน้ายินดีต้อนรับ (แสดงหลังเข้าสู่ระบบ) ─────────
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  App.showWelcome = function () {
+    document.getElementById('welcome')?.remove();
+    const st = this.state, s = st.settings || {};
+    const dept = App.deptLabel(st.department || s.departmentName || '');
+    const h = new Date().getHours();
+    const greet = h < 12 ? 'สวัสดีตอนเช้า' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+    const today = todayStr();
+    const isAdmin = st.role === 'admin';
+    const el = document.createElement('div'); el.id = 'welcome';
+    el.innerHTML = `
+      <div class="wl-wrap">
+        <div class="wl-emblem">
+          <svg viewBox="0 0 120 120" width="96" height="96" aria-hidden="true">
+            <circle class="wl-ring r1" cx="60" cy="60" r="54" /><circle class="wl-ring r2" cx="60" cy="60" r="40" />
+            <polygon class="wl-ring r3" points="60,14 103.7,45.8 87,97.2 33,97.2 16.3,45.8" />
+          </svg>
+          <img src="logo.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <p class="wl-kicker">${greet} · ยินดีต้อนรับ</p>
+        <h1 class="wl-name">${esc(st.name || st.uid)}</h1>
+        ${dept ? `<div class="wl-dept"><i></i><span>${esc(dept)}</span><i></i></div>` : ''}
+        <p class="wl-sub">${esc(s.schoolName || '')}${s.schoolName ? ' · ' : ''}${esc(this.thDateFull(today))}</p>
+        <div class="wl-tiles">
+          <button class="wl-tile" data-go="user-ack"><b id="wl-n1">–</b><span>คาบสอนแทนที่รอรับทราบ</span></button>
+          <button class="wl-tile" data-go="swap"><b id="wl-n2">–</b><span>คำขอแลกคาบที่รอคุณตอบ</span></button>
+          <button class="wl-tile" data-go="${isAdmin ? 'swap-pending' : 'user-stats'}"><b id="wl-n3">–</b><span>${isAdmin ? 'แลกคาบรออนุมัติ' : 'สอนแทนเดือนนี้'}</span></button>
+        </div>
+        <button class="btn btn-primary wl-go">เริ่มใช้งาน <span aria-hidden="true">→</span></button>
+        <p class="wl-hint">กด Enter หรือคลิกที่ใดก็ได้เพื่อเข้าสู่ระบบ</p>
+      </div>`;
+    document.body.appendChild(el);
+
+    let closed = false, goTo = null;
+    const close = (to) => {
+      if (closed) return; closed = true; goTo = to;
+      el.classList.add('leaving');
+      removeEventListener('keydown', onKey);
+      setTimeout(() => { el.remove(); if (goTo) { if (goTo === 'swap-pending') { App._swapTab = 'list'; App.navTo('swap'); setTimeout(() => { const sc = document.getElementById('swap-list-scope'); if (sc) { sc.value = 'pending'; App.loadSwapList(); } }, 400); } else App.navTo(goTo); } }, 650);
+    };
+    const onKey = (e) => { if (e.key === 'Enter' || e.key === 'Escape') close(); };
+    addEventListener('keydown', onKey);
+    el.addEventListener('click', (e) => { const t = e.target.closest('.wl-tile'); close(t ? t.dataset.go : null); });
+
+    // ตัวเลขสรุป — โหลดเบื้องหลัง
+    const ym = today.slice(0, 7), semFv = `${s.currentSemester || '1'}_${s.currentYear || ''}`;
+    const set = (id, v) => { const n = document.getElementById(id); if (n) { n.textContent = v; n.classList.add('in'); } };
+    this.api({ action: 'getMySubs', teacherId: st.uid, ft: 'semester', fv: semFv }).then(r => set('wl-n1', r.ok ? (r.substitutes || []).filter(x => !x.acknowledged).length : '–'));
+    this.api({ action: 'listSwaps', scope: 'mine' }).then(r => set('wl-n2', r.ok ? (r.waitingForMe || 0) : '–'));
+    if (isAdmin) this.api({ action: 'listSwaps', scope: 'pending' }).then(r => set('wl-n3', r.ok ? (r.count || 0) : '–'));
+    else this.api({ action: 'getMySubs', teacherId: st.uid, ft: 'month', fv: ym }).then(r => set('wl-n3', r.ok ? (r.substitutes || []).length : '–'));
+  };
+})();
+
+/* ── Dashboard logic ── */
+(function () {
+  const esc = s => App.esc(s);
+  App.deptLabel = s => String(s || '').replace(/^[\d.]+\s*-\s*/, '');
+  const thS = d => d ? App.thDateShort(d) : '';
+  Object.assign(App, {
+    _dx: null, _dxShown: 25,
+    async loadDashboard() {
+      const body = document.getElementById('dx-body');
+      const r = await this.api({ action: 'getDashboard', token: this.state.token || '' });
+      if (!r || !r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>${esc((r && r.err) || 'โหลดข้อมูลไม่สำเร็จ')}</p></div>`; return; }
+      this._dx = r; this._dxShown = 25; this.renderDashboard();
+    },
+    _dxRing(pct, size) {
+      size = size || 54; const R = 22, C = 2 * Math.PI * R, v = Math.max(0, Math.min(100, pct || 0));
+      return `<svg class="dx-ring" width="${size}" height="${size}" viewBox="0 0 54 54"><circle cx="27" cy="27" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="27" cy="27" r="${R}" fill="none" stroke="url(#dxg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 27 27)"><animate attributeName="stroke-dashoffset" from="${C}" to="${C * (1 - v / 100)}" dur="1.2s" fill="freeze" calcMode="spline" keySplines=".2 .8 .2 1" keyTimes="0;1"/></circle><defs><linearGradient id="dxg" x1="0" x2="1"><stop offset="0" stop-color="#a88a4f"/><stop offset="1" stop-color="#f0dfb2"/></linearGradient></defs></svg>`;
+    },
+    _dxHBars(list, key, label) {
+      if (!list || !list.length) return '<p class="dx-lock" style="padding:14px">ยังไม่มีข้อมูล</p>';
+      const mx = Math.max.apply(null, list.map(x => x.count)) || 1;
+      return list.slice(0, 7).map(x => `<div class="dx-hb"><span>${esc(x[label])}</span><div class="tr"><i data-w="${Math.round(x.count * 100 / mx)}"></i></div><em>${x.count}</em></div>`).join('');
+    },
+    renderDashboard() {
+      const d = this._dx, body = document.getElementById('dx-body'); if (!d) return;
+      const li = !!d.loggedIn;
+      document.getElementById('dx-login-cta').style.display = li ? 'none' : '';
+      document.getElementById('dx-kicker').textContent = li ? 'แดชบอร์ดของคุณ' : 'ภาพรวมระบบ';
+      document.getElementById('dx-sub').textContent = `ภาคเรียนที่ ${d.semester}/${d.academicYear} · ${this.thDateFull(d.today)}`;
+      const kpi = (lbl, n, foot, extra) => `<div class="card dx-kpi"><p class="dx-lbl">${lbl}</p><p class="stat-num">${n}</p><p class="dx-foot">${foot}</p>${extra || ''}</div>`;
+      const t = d.todayStat, m = d.monthStat, s = d.semesterStat;
+      let h = `<div class="dx-grid dx-kpis">
+        ${kpi('วันนี้ต้องจัดสอนแทน', t.total, `จัดแล้ว ${t.assigned} · ยังไม่จัด ${t.noSub}`)}
+        ${kpi('เดือนนี้', m.total, `จัดแล้ว ${m.assigned} คาบ · ครูไม่อยู่ ${m.absentTeachers} คน`)}
+        ${kpi('ภาคเรียนนี้', s.total, `ครูไม่อยู่ ${s.absentTeachers} คน · แลกคาบ ${d.swapCountSemester} คู่`)}
+        ${kpi('อัตราการจัดแล้ว', d.coverageRate == null ? '–' : d.coverageRate + '<small style="font-size:18px">%</small>', `รอรับทราบ ${s.pendingAck} คาบ`, this._dxRing(d.coverageRate || 0))}
+      </div>`;
+      const mx = Math.max.apply(null, d.trend.map(x => x.count).concat([1]));
+      h += `<div class="dx-grid dx-two">
+        <div class="card dx-card"><h3>คาบสอนแทน 14 วันล่าสุด<small>คาบ / วัน</small></h3><div class="dx-bars">${d.trend.map((x, i) => {
+          const hh = x.count ? Math.max(8, Math.round(x.count * 100 / mx)) : 0;
+          return `<div class="dx-bar${x.weekend ? ' we' : ''}"><b>${x.count || ''}</b><i class="${x.count ? '' : 'zero'}${x.date === d.today ? ' today' : ''}" style="--i:${i};height:${x.count ? hh + '%' : '3px'}"></i><span>${+x.date.slice(8)}</span></div>`;
+        }).join('')}</div></div>
+        <div class="card dx-card"><h3>สาเหตุ (ภาคเรียนนี้)</h3>${this._dxHBars(d.reasons, 'count', 'reason')}</div>
+      </div>`;
+      h += `<div class="dx-grid dx-three">
+        <div class="card dx-card"><h3>แยกตามวันในสัปดาห์</h3>${this._dxHBars(d.weekdays, 'count', 'day')}</div>
+        <div class="card dx-card"><h3>ภาพรวมโรงเรียน</h3><div class="dx-me" style="grid-template-columns:1fr 1fr"><div><p>ครูที่ใช้ระบบ</p><strong>${d.teacherCount}</strong></div><div><p>กลุ่มสาระ</p><strong>${d.departmentCount}</strong></div><div><p>จัดแล้วทั้งหมด</p><strong>${s.assigned}</strong></div><div><p>ยังไม่จัด</p><strong>${s.noSub}</strong></div></div></div>
+        ${li ? `<div class="card dx-card"><h3>ของฉัน<small>${esc(d.me.name)}</small></h3><div class="dx-me" style="grid-template-columns:1fr 1fr"><div><p>สอนแทน (เดือนนี้)</p><strong>${d.me.monthSub}</strong></div><div><p>สอนแทน (ภาคเรียน)</p><strong>${d.me.semSub}</strong></div><div><p>ถูกสอนแทน (ภาคเรียน)</p><strong>${d.me.semAbsent}</strong></div><div><p>รอรับทราบ</p><strong>${d.me.pendingAck}</strong></div></div></div>`
+        : `<div class="card dx-card"><div class="dx-lock"><b>ข้อมูลส่วนตัวและกลุ่มสาระ</b>เข้าสู่ระบบเพื่อดูสถิติของคุณ ประวัติการสอนแทน และภาพรวมกลุ่มสาระ<div style="margin-top:14px"><button class="btn btn-gold btn-sm" onclick="App.goLogin()">เข้าสู่ระบบ</button></div></div></div>`}
+      </div>`;
+      if (li && d.department) {
+        const g = d.department;
+        h += `<div class="dx-grid dx-two"><div class="card dx-card"><h3>${esc(App.deptLabel(g.name))}<small>กลุ่มสาระของฉัน · ${g.teacherCount} คน</small></h3>
+          <div class="dx-me"><div><p>ครูในกลุ่มไปสอนแทน (ภาคเรียน)</p><strong>${g.semSubstituted}</strong></div><div><p>คาบของกลุ่มที่ต้องมีคนแทน</p><strong>${g.semCovered}</strong></div><div><p>จัดแล้ว</p><strong>${g.semCoveredAssigned}</strong></div><div><p>สัดส่วนต่อทั้งโรงเรียน</p><strong>${g.shareOfSchool}%</strong></div></div>
+          <div class="dx-me" style="margin-top:10px"><div><p>เดือนนี้ · สอนแทน</p><strong>${g.monthSubstituted}</strong></div><div><p>เดือนนี้ · ถูกแทน</p><strong>${g.monthCovered}</strong></div><div><p>วันนี้ · ถูกแทน</p><strong>${g.todayCovered}</strong></div><div><p>แลกคาบ (คู่)</p><strong>${g.swapSemester}</strong></div></div>
+          ${g.reasons.length ? `<div style="margin-top:14px">${this._dxHBars(g.reasons, 'count', 'reason')}</div>` : ''}
+          ${g.known ? '' : '<p class="dx-sub" style="margin-top:10px">* ยังไม่ได้กำหนดกลุ่มสาระของบัญชีนี้ จึงแสดงทั้งโรงเรียน</p>'}</div>
+          <div class="card dx-card"><h3>ครูในกลุ่ม<small>สอนแทน / ถูกแทน</small></h3><div class="dx-rank">${g.perTeacher.slice(0, 10).map(p => `<div><span>${esc(p.name)}</span><em>${p.sub} / ${p.absent}</em></div>`).join('')}</div></div></div>`;
+      }
+      if (li && d.ranking) {
+        h += `<div class="card dx-card dx-grid" style="display:block;margin-bottom:14px"><h3>ผู้สอนแทนสูงสุด 10 อันดับ (ภาคเรียนนี้)<small>เฉพาะผู้ดูแล</small></h3><div class="dx-rank">${d.ranking.map(p => `<div><span>${esc(p.name)} ${p.department ? '<small style="color:var(--text-3)">· ' + esc(App.deptLabel(p.department)) + '</small>' : ''}</span><em>${p.count} คาบ</em></div>`).join('') || '<p class="dx-lock">ยังไม่มีข้อมูล</p>'}</div></div>`;
+      }
+      if (li) {
+        const rows = d.history.slice(0, this._dxShown);
+        h += `<div class="card dx-card"><h3>ประวัติการจัดสอนแทน<small>ล่าสุดอยู่บนสุด · ${d.historyTotal} รายการ</small></h3><div class="dx-tblwrap"><table class="tbl"><thead><tr><th>วันที่</th><th>คาบ</th><th>ห้อง</th><th>วิชา</th><th>ครูเดิม</th><th>ครูสอนแทน</th><th>สาเหตุ</th><th>สถานะ</th></tr></thead><tbody>${
+          rows.map((x, i) => `<tr><td>${i === 0 ? '<span class="dx-new"></span>' : ''}${esc(thS(x.date))}</td><td>${esc(x.period)}</td><td>${esc(x.room)}</td><td>${esc(x.subjectCode)}</td><td>${esc(x.absentName)}</td><td>${esc(x.subName)}</td><td>${esc(x.reason)}</td><td>${x.subName === 'ไม่จัดสอนแทน' ? '<span class="badge badge-nosub">ไม่จัด</span>' : x.acknowledged ? '<span class="badge badge-ack">รับทราบแล้ว</span>' : '<span class="badge badge-pending">รอรับทราบ</span>'}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:26px;color:var(--text-3)">ยังไม่มีประวัติ</td></tr>'}</tbody></table></div>${d.history.length > this._dxShown ? `<div class="dx-more"><button class="btn btn-secondary btn-sm" onclick="App._dxShown+=25;App.renderDashboard()">แสดงเพิ่ม</button></div>` : ''}</div>`;
+      } else {
+        h += `<div class="card dx-card"><div class="dx-lock"><b>ประวัติการจัดสอนแทน</b>ครูที่เข้าสู่ระบบแล้วจะเห็นรายการล่าสุดอยู่บนสุด</div></div>`;
+      }
+      body.innerHTML = h;
+      requestAnimationFrame(() => requestAnimationFrame(() => body.querySelectorAll('.tr i[data-w]').forEach(e => e.style.width = e.dataset.w + '%')));
+    }
+  });
+})();
+
 </script>
 <!-- Session Timeout Warning Modal -->
 <div id="session-warn-modal" style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
