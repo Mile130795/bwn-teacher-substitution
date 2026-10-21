@@ -639,6 +639,11 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 #sidebar.collapsed .app-ver{display:none}
 /* toast: ซ่อนเสมอจนกว่า JS จะสั่งแสดง */
 #toast:empty{display:none!important}
+#lx-imgview{position:fixed;inset:0;z-index:10000;background:#0a1020;display:flex;flex-direction:column}
+#lx-imgview .iv-bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(214,185,126,.3);color:#f0dfb2;font-size:15px}
+#lx-imgview .iv-bar span{flex:1}
+#lx-imgview .iv-body{flex:1;overflow:auto;padding:14px;text-align:center;-webkit-overflow-scrolling:touch}
+#lx-imgview img{max-width:100%;height:auto;border-radius:10px;border:1px solid rgba(214,185,126,.35);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
 
 </style>
 </head>
@@ -4083,7 +4088,34 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.5 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.6 · Luxe'; sb.appendChild(v);
+})();
+
+/* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
+(function () {
+  const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent);
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function overlay(url, name, blob) {
+    let o = document.getElementById('lx-imgview'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'lx-imgview';
+    const canShare = blob && navigator.canShare && (() => { try { return navigator.canShare({ files: [new File([blob], name, { type: 'image/png' })] }); } catch (e) { return false; } })();
+    o.innerHTML = `<div class="iv-bar"><span>กดค้างที่ภาพ แล้วเลือก “บันทึกภาพ”</span>${canShare ? '<button class="btn btn-gold" id="iv-share">แชร์/บันทึก</button>' : ''}<button class="btn btn-secondary" id="iv-x">ปิด</button></div><div class="iv-body"><img src="${url}" alt="${App.esc(name)}"></div>`;
+    document.body.appendChild(o);
+    o.querySelector('#iv-x').onclick = () => o.remove();
+    const sh = o.querySelector('#iv-share');
+    if (sh) sh.onclick = async () => { try { await navigator.share({ files: [new File([blob], name, { type: 'image/png' })] }); } catch (e) {} };
+  }
+  App._saveCanvas = function (canvas, filename) {
+    const dataUrl = canvas.toDataURL('image/png');
+    if (ios || inApp) {
+      canvas.toBlob(b => { overlay(b ? URL.createObjectURL(b) : dataUrl, filename, b); }, 'image/png');
+      App.toast('สร้างภาพแล้ว กดค้างที่ภาพเพื่อบันทึก', 'success');
+      return;
+    }
+    const a = document.createElement('a'); a.href = dataUrl; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    App.toast('บันทึกภาพสำเร็จ', 'success');
+  };
 })();
 
 </script>
