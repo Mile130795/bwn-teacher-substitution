@@ -614,15 +614,29 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 .btn-danger-lx{background:linear-gradient(135deg,#f2a1a1,#d96a6a)!important;color:#2a0a0a!important;border:0!important;font-weight:700}
 .btn-danger-lx:hover{box-shadow:0 10px 26px -8px rgba(239,138,138,.6)}
 
-/* toast: ไอคอนนำ */
-#toast{display:flex;align-items:center;gap:10px;border-radius:14px!important;padding:13px 18px!important}
-#toast::before{content:'';width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--gold);box-shadow:0 0 12px var(--gold)}
-#toast.success::before{background:#6fcfaa;box-shadow:0 0 12px #6fcfaa}
-#toast.error::before{background:#ef8a8a;box-shadow:0 0 12px #ef8a8a}
-#toast.warn::before{background:#e6b85c;box-shadow:0 0 12px #e6b85c}
+
 #session-warn-modal button[style*="6c63ff"]{background:linear-gradient(135deg,#f0dfb2,#d6b97e 55%,#a88a4f)!important;color:#0a1020!important;box-shadow:0 10px 26px -10px rgba(214,185,126,.6)!important}
 #session-warn-modal button[style*="e5e7eb"]{background:rgba(255,255,255,.05)!important;color:var(--text-2)!important;border-color:var(--line)!important}
 #session-warn-modal>div{border-radius:20px!important}
+
+/* ── Toast ── */
+#toast{position:fixed!important;right:24px!important;bottom:24px!important;min-width:280px;max-width:min(420px,calc(100vw - 32px));padding:14px 18px 16px 14px!important;gap:13px!important;align-items:center;border-radius:16px!important;overflow:hidden;
+  background:linear-gradient(180deg,rgba(24,36,68,.96),rgba(10,16,34,.97))!important;border:1px solid var(--line)!important;border-left:1px solid var(--line)!important;color:var(--ivory)!important;
+  box-shadow:0 30px 70px -20px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.03) inset!important;backdrop-filter:blur(18px)}
+#toast::before{display:none!important}
+#toast .tz-ic{width:38px;height:38px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--c);background:radial-gradient(circle at 30% 20%,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 6%,transparent));border:1px solid color-mix(in srgb,var(--c) 38%,transparent);box-shadow:0 0 18px -4px var(--c)}
+#toast .tz-ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#toast .tz-tx{display:flex;flex-direction:column;line-height:1.35;min-width:0}
+#toast .tz-tx b{font-size:11px;letter-spacing:.16em;color:var(--c);font-weight:600;text-transform:uppercase}
+#toast .tz-tx span{font-size:14px;font-weight:500;color:var(--ivory)}
+#toast .tz-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,transparent,var(--c));transform-origin:left;transform:scaleX(1)}
+#toast.go .tz-bar{animation:tzBar 3.4s linear forwards}
+@keyframes tzBar{to{transform:scaleX(0)}}
+#toast{--c:#d6b97e}
+#toast.success{--c:#6fcfaa}#toast.error{--c:#ef8a8a}#toast.warn{--c:#e6b85c}#toast.info{--c:#d6b97e}
+@media(max-width:520px){#toast{left:16px!important;right:16px!important;bottom:16px!important}}
+.app-ver{padding:0 18px 10px;font-size:10.5px;letter-spacing:.12em;color:rgba(214,185,126,.45);text-align:center}
+#sidebar.collapsed .app-ver{display:none}
 
 </style>
 </head>
@@ -4042,6 +4056,32 @@ window.addEventListener('DOMContentLoaded', () => {
   const dangerRe = /ยกเลิก|ลบ|ล้าง|ไม่อนุมัติ|ปฏิเสธ|⚠/;
   App._confirm = msg => open({ msg, kind: dangerRe.test(msg) ? 'danger' : 'ask', ok: dangerRe.test(msg) ? 'ยืนยัน' : 'ตกลง' });
   App._prompt = msg => open({ msg, kind: 'note', input: true, placeholder: 'พิมพ์เหตุผล (ถ้ามี)', ok: 'ยืนยัน' });
+})();
+
+/* ── Toast แบบธีมทอง: ไอคอนเส้น + แถบเวลา ── */
+(function () {
+  const IC = {
+    success:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    error:'<path d="M7 7l10 10M17 7L7 17"/>',
+    warn:'<path d="M12 5l8.5 15h-17z"/><path d="M12 10.5v4M12 17.3v.1"/>',
+    info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>'
+  };
+  const TT = { success:'สำเร็จ', error:'เกิดข้อผิดพลาด', warn:'โปรดทราบ', info:'แจ้งให้ทราบ' };
+  App.toast = function (msg, type) {
+    type = IC[type] ? type : 'info';
+    const el = document.getElementById('toast'); if (!el) return;
+    el.style.display = 'flex'; el.className = type;
+    el.innerHTML = `<span class="tz-ic"><svg viewBox="0 0 24 24">${IC[type]}</svg></span><span class="tz-tx"><b>${TT[type]}</b><span>${msg}</span></span><i class="tz-bar"></i>`;
+    void el.offsetWidth; el.classList.add('go');
+    clearTimeout(this._toastTm);
+    this._toastTm = setTimeout(() => { el.style.display = 'none'; }, 3400);
+  };
+})();
+
+/* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
+(function () {
+  const sb = document.getElementById('sidebar'); if (!sb) return;
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.3 · Luxe'; sb.appendChild(v);
 })();
 
 </script>
