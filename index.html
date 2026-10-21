@@ -3181,6 +3181,7 @@ const App = {
         ${this.statBox('ต้องส่งกลุ่มสาระ', s.needSubstitute||0, '#fee2e2', 'var(--danger)')}
         ${this.statBox('มีผู้สอนแล้ว', s.covered||0, '#f1f5f9', 'var(--text-2)')}
       </div>
+      ${r.dataNote ? `<p style="margin:10px 0 0;font-size:12.5px;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">ℹ️ ${this.esc(r.dataNote)}</p>` : ''}
       ${r.note ? `<p style="margin:10px 0 0;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;">⚠️ ${this.esc(r.note)}</p>` : ''}
     </div>`;
 
@@ -3220,16 +3221,16 @@ const App = {
       inner = `<p style="margin:10px 0 0;font-size:13px;"><span class="badge badge-ack">${p.alreadyCovered.isSwap?'แลกคาบแล้ว':'มีผู้สอนแทนแล้ว'}</span> โดย ${this.esc(p.alreadyCovered.subName)}</p>`;
     } else if (p.status === 'substitute') {
       const sb = p.substitute || {};
-      const cands = (sb.candidates||[]).map(c => `<span class="period-pill">${this.esc(c.fullName)} (วันนั้นสอน ${c.dayLoad} คาบ)</span>`).join('');
+      const cands = (sb.candidates||[]).map(c => `<span class="period-pill">${this.esc(c.fullName)}${sb.crossDept&&c.department?' ['+this.esc(c.department)+']':''} (วันนั้นสอน ${c.dayLoad} คาบ)</span>`).join('');
       inner = `<div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;">
         <p style="margin:0 0 6px;font-size:13px;color:#991b1b;font-weight:600;">🔴 ${this.esc(sb.message||'แลกคาบไม่ได้')}</p>
         ${sb.headTeacher?`<p style="margin:0 0 6px;font-size:12.5px;color:var(--text-2);">แจ้งหัวหน้ากลุ่มสาระ: <b>${this.esc(sb.headTeacher)}</b></p>`:''}
-        ${cands?`<p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-2);">ครูในกลุ่มที่ว่างคาบนี้:</p><div>${cands}</div>`:''}
+        ${cands?`<p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-2);">${sb.crossDept?'ครูกลุ่มสาระอื่นที่ว่างคาบนี้:':'ครูในกลุ่มที่ว่างคาบนี้:'}</p><div>${cands}</div>`:''}
         ${this.state.role==='admin'?`<button onclick="App.goAssignFor('${r.date}','${this.esc(r.teacherId)}')" class="btn btn-outline btn-sm" style="margin-top:8px;">📝 ไปจัดสอนแทน</button>`:''}
       </div>`;
     } else {
       const opts = p.options.slice(0, sel.showAll ? 50 : 4);
-      inner = `<div style="margin-top:10px;">` + opts.map((o, oi) => {
+      inner = `<div style="margin-top:10px;">` + `<div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">วิเคราะห์แล้ว: ในกลุ่มสาระ <b>${p.inDeptCount||0}</b> คน · กลุ่มสาระอื่น <b>${p.otherDeptCount||0}</b> คน (เรียงกลุ่มสาระตนเองก่อน)</div>` + opts.map((o, oi) => {
         const isSel = sel.oi === oi;
         const rets = o.returns.map((x, ri) =>
           `<button class="ret-chip ${isSel && sel.ri === ri ? 'sel' : ''} ${x.onLeaveDay?'leave':''}" onclick="App.pickSwap(${pi},${oi},${ri})" title="${x.onLeaveDay?'ตรงกับวันที่คุณลา':''}">
@@ -4088,7 +4089,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.6 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.7 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
