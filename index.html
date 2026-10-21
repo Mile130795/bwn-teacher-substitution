@@ -644,6 +644,29 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 #lx-imgview .iv-bar span{flex:1}
 #lx-imgview .iv-body{flex:1;overflow:auto;padding:14px;text-align:center;-webkit-overflow-scrolling:touch}
 #lx-imgview img{max-width:100%;height:auto;border-radius:10px;border:1px solid rgba(214,185,126,.35);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+/* ── หน้าตรวจสอบแลกคาบ ── */
+.sw-verdict{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;margin:2px 0 14px;border:1px solid}
+.sw-verdict b{font-size:19px;font-weight:700}.sw-verdict span{font-size:13.5px;opacity:.85}
+.sw-verdict.ok{background:rgba(111,207,170,.12);border-color:rgba(111,207,170,.45);color:#8be0bd}
+.sw-verdict.no{background:rgba(239,138,138,.12);border-color:rgba(239,138,138,.45);color:#f2a1a1}
+.sw-title{font-size:12px;letter-spacing:.08em;color:var(--gold,#d6b97e);font-weight:700;margin:4px 0 8px}
+.sw-title.bad{color:#f2a1a1;margin-top:14px}
+.sw-leg{border:1px solid rgba(214,185,126,.28);border-radius:12px;padding:12px 14px;background:rgba(214,185,126,.05)}
+.sw-head{display:flex;align-items:center;gap:10px}
+.sw-head>div:nth-child(2){flex:1;line-height:1.3}.sw-head b{display:block;font-size:15px}.sw-head small{font-size:12.5px;opacity:.75}
+.sw-n{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f0dfb2,#a88a4f);color:#0a1020;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.sw-slot{text-align:center;border:1px solid rgba(214,185,126,.4);border-radius:10px;padding:2px 12px;line-height:1.1}
+.sw-slot i{display:block;font-style:normal;font-size:10.5px;opacity:.7}.sw-slot b{font-size:22px;color:#f0dfb2}
+.sw-meta{font-size:12.5px;opacity:.8;margin:8px 0 10px}
+.sw-flow{display:flex;align-items:stretch;gap:8px}
+.sw-flow>span{flex:1;border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px;line-height:1.3}
+.sw-flow i{display:block;font-style:normal;font-size:10.5px;font-weight:500;opacity:.7;margin-bottom:2px}
+.sw-from{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.sw-to{background:rgba(214,185,126,.14);border:1px solid rgba(214,185,126,.5);color:#f0dfb2}
+.sw-arrow{flex:0 0 auto!important;align-self:center;font-size:18px;color:#d6b97e;padding:0!important}
+.sw-swap{text-align:center;font-size:12.5px;color:#d6b97e;margin:6px 0;letter-spacing:.06em}
+.sw-pass{margin:12px 0 0;font-size:13px}.sw-pass summary{cursor:pointer;opacity:.8;padding:4px 0}
+@media(max-width:480px){.sw-flow{flex-direction:column}.sw-arrow{transform:rotate(90deg)}}
 
 </style>
 </head>
@@ -3234,13 +3257,14 @@ const App = {
         const isSel = sel.oi === oi;
         const rets = o.returns.map((x, ri) =>
           `<button class="ret-chip ${isSel && sel.ri === ri ? 'sel' : ''} ${x.onLeaveDay?'leave':''}" onclick="App.pickSwap(${pi},${oi},${ri})" title="${x.onLeaveDay?'ตรงกับวันที่คุณลา':''}">
-             ${this.esc(x.day)} คาบ ${x.period} · ${this.esc(x.room||'')}${x.onLeaveDay?' ⚠️':''}</button>`).join('');
-        return `<div class="swap-opt ${isSel?'sel':''}">
+             ${this.esc(x.day)} คาบ ${x.period} · ${this.esc(x.room||'')}${x.onLeaveDay?' ⚠️':''}${x.meSoft?' · ติด '+this.esc(x.meSoft):''}</button>`).join('');
+        return `<div class="swap-opt ${isSel?'sel':''}" style="${o.needOverride?'opacity:.78;border-style:dashed;':''}">
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;">
             <div><b style="font-size:14px;">${this.esc(o.fullName)}</b>
               <span style="font-size:12px;color:var(--text-2);"> ${this.esc(o.teacherId)}${o.department?' · '+this.esc(o.department):''}</span>
               ${o.sameDept===true?'<span class="badge badge-ack" style="margin-left:4px;">กลุ่มสาระเดียวกัน</span>':o.sameDept===false?'<span class="badge badge-info" style="margin-left:4px;">ต่างกลุ่มสาระ</span>':''}</div>
             <span class="score-pill">${o.score} คะแนน</span>
+            ${o.needOverride?'<span class="badge badge-pending" style="margin-left:4px;">ต้องให้ Admin อนุมัติข้าม</span>':''}
           </div>
           <div style="font-size:12px;color:var(--text-2);margin:5px 0;">${o.reasons.map(x => '• '+this.esc(x)).join('  ')}</div>
           <div style="font-size:12px;font-weight:700;color:var(--text-2);">เลือกคาบที่คุณจะไปสอนคืน:</div>
@@ -4089,7 +4113,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.7 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.9 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
@@ -4116,6 +4140,64 @@ window.addEventListener('DOMContentLoaded', () => {
     const a = document.createElement('a'); a.href = dataUrl; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     App.toast('บันทึกภาพสำเร็จ', 'success');
+  };
+})();
+
+/* ── หน้าตรวจสอบการแลกคาบ: เห็นภาพ "ใครไปสอนแทนใคร วันไหน คาบไหน" ก่อน แล้วค่อยดูรายการตรวจ ── */
+(function () {
+  const short = n => String(n || '').replace(/^(นางสาว|นาย|นาง|ว่าที่ ร\.ต\.|Mr\.|Ms\.)\s*/, '');
+  App.swapRecheck = async function () {
+    const c = this._swap.ctx; if (!c) return;
+    c.retDate = document.getElementById('swap-ret-date').value;
+    const el = document.getElementById('swap-check-body');
+    el.innerHTML = '<div class="empty-state" style="padding:20px;"><p>กำลังตรวจสอบ...</p></div>';
+    const r = await this.api({ action: 'checkSwap', teacherId: c.teacherId, date: c.date, period: c.period, otherId: c.otherId, returnDate: c.retDate, returnPeriod: c.retPeriod });
+    if (!r.ok) { el.innerHTML = `<p style="color:var(--danger);font-weight:600;">${this.esc(r.err)}</p>`; return; }
+    this._swap.chk = r;
+    const isAdmin = this.state.role === 'admin';
+    const OVR = { meFree: 'ข้ามเงื่อนไข: ผมว่างในคาบที่ไปสอนคืน', otherFree: 'ข้ามเงื่อนไข: คู่แลกว่างในคาบนี้', meNotAbsentReturn: 'ข้ามเงื่อนไข: ผมอยู่ปฏิบัติงานวันที่คืน' };
+    const failed = r.checks.filter(x => !x.pass), passed = r.checks.filter(x => x.pass);
+    const failedOvr = failed.filter(x => OVR[x.key]);
+    const failedHard = failed.filter(x => !OVR[x.key]);
+
+    const d = this._swap.data, p = d.periods[c.pi], o = p.options.find(x => x.teacherId === c.otherId) || {};
+    const ret = (o.returns || []).find(x => x.day === c.retDay && x.period === c.retPeriod) || {};
+    const me = short(d.teacherName), ot = short(c.otherName || o.fullName);
+    const leg = (n, title, date, per, time, room, subj, from, to) => `
+      <div class="sw-leg">
+        <div class="sw-head"><span class="sw-n">${n}</span><div><b>${title}</b><small>${date}</small></div>
+          <div class="sw-slot"><i>คาบ</i><b>${per}</b></div></div>
+        <div class="sw-meta">${time ? '🕐 ' + this.esc(time) + ' · ' : ''}ห้อง ${this.esc(room || '-')}${subj ? ' · ' + this.esc(subj) : ''}</div>
+        <div class="sw-flow"><span class="sw-from"><i>เดิมสอน</i>${this.esc(from)}</span><span class="sw-arrow">→</span><span class="sw-to"><i>สอนแทน</i>${this.esc(to)}</span></div>
+      </div>`;
+    let html = `<div class="sw-verdict ${r.valid ? 'ok' : 'no'}"><b>${r.valid ? 'แลกได้' : 'แลกไม่ได้'}</b><span>${r.valid ? 'ผ่านครบ ' + r.checks.length + ' ข้อ' : 'ไม่ผ่าน ' + failed.length + ' จาก ' + r.checks.length + ' ข้อ'}</span></div>
+      <div class="sw-title">ผลการแลกถ้าอนุมัติ</div>
+      ${leg(1, 'คาบที่ขอแลก', this.thDateShort(c.date) + ' (' + this.getDayName(c.date) + ')', p.period, p.timeRange, p.room, p.subjectCode, me, ot)}
+      <div class="sw-swap">⇅ แลกกัน</div>
+      ${leg(2, 'คาบที่ไปสอนคืน', c.retDate ? this.thDateShort(c.retDate) + ' (' + c.retDay + ')' : c.retDay, c.retPeriod, ret.timeRange, ret.room, ret.subjectCode, ot, me)}`;
+    if (failed.length) {
+      html += `<div class="sw-title bad">ข้อที่ไม่ผ่าน (${failed.length})</div>` +
+        failed.map(x => `<div class="chk-row"><span>❌</span><span style="color:#991b1b;font-weight:600;">${this.esc(x.msg)}</span></div>`).join('');
+    }
+    html += `<details class="sw-pass"${failed.length ? '' : ''}><summary>รายการตรวจที่ผ่าน (${passed.length})</summary>` +
+      passed.map(x => `<div class="chk-row"><span>✅</span><span>${this.esc(x.msg)}</span></div>`).join('') + '</details>';
+
+    let canSend = r.valid;
+    if (!r.valid) {
+      if (failedHard.length || !isAdmin) html += `<p style="margin:10px 0 8px;font-size:12.5px;color:var(--text-2);">${this.esc(r.advice || 'ให้ส่งต่อกลุ่มสาระจัดครูสอนแทน')}</p>`;
+      if (isAdmin && failedOvr.length && !failedHard.length) {
+        html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin:10px 0 8px;">
+          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: ข้ามเงื่อนไขได้ (ต้องระบุเหตุผล)</p>
+          ${failedOvr.map(x => `<label style="display:flex;gap:6px;font-size:12.5px;margin-bottom:4px;"><input type="checkbox" class="swap-ovr" value="${x.key}" onchange="App.swapOvrChanged()"> ${OVR[x.key]}</label>`).join('')}
+          <input id="swap-ovr-reason" class="form-input" style="margin-top:6px;" placeholder="เหตุผล เช่น นักเรียนไปทำกิจกรรมคณะสี" oninput="App.swapOvrChanged()"></div>`;
+      }
+      canSend = false;
+    }
+    html += `<label class="form-label" style="margin-top:10px;">หมายเหตุ (ถ้ามี)</label><input id="swap-note" class="form-input" style="margin-bottom:10px;">`;
+    if (isAdmin) html += `<label style="display:flex;gap:6px;font-size:13px;margin-bottom:10px;"><input type="checkbox" id="swap-agreed"> คู่แลกตกลงกันแล้ว — บันทึกและอนุมัติทันที</label>`;
+    html += `<div style="display:flex;gap:8px;"><button id="swap-send-btn" onclick="App.submitSwap()" class="btn btn-primary" ${canSend ? '' : 'disabled'}>📨 ${isAdmin ? 'บันทึก/ส่งคำขอ' : 'ส่งคำขอแลกคาบ'}</button>
+      <button onclick="App.closeSwapModal()" class="btn btn-secondary">ปิด</button></div>`;
+    el.innerHTML = html;
   };
 })();
 
