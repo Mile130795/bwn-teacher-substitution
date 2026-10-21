@@ -637,13 +637,15 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 @media(max-width:520px){#toast{left:16px!important;right:16px!important;bottom:16px!important}}
 .app-ver{padding:0 18px 10px;font-size:10.5px;letter-spacing:.12em;color:rgba(214,185,126,.45);text-align:center}
 #sidebar.collapsed .app-ver{display:none}
+/* toast: ซ่อนเสมอจนกว่า JS จะสั่งแสดง */
+#toast:empty{display:none!important}
 
 </style>
 </head>
 <body>
 
 <!-- Toast -->
-<div id="toast"></div>
+<div id="toast" style="display:none"></div>
 <div id="print-area" style="display:none;"></div>
 <!-- Loading -->
 <div id="loading"><div class="spinner"></div></div>
@@ -1898,7 +1900,7 @@ const App = {
       const canvas = await html2canvas(wrap.firstElementChild, { scale:2, useCORS:true, backgroundColor:'#0a1020' });
       document.body.removeChild(wrap);
       this._saveCanvas(canvas, `ตารางสอนแทน_${date}.png`);
-    } catch(e) { this.toast('บันทึกภาพไม่สำเร็จ','error'); }
+    } catch(e) { console.error(e); this.toast('บันทึกภาพไม่สำเร็จ: '+((e&&e.message)||e),'error'); }
     this.showLoading(false);
   },
 
@@ -2228,7 +2230,7 @@ const App = {
       const canvas = await html2canvas(wrap.firstElementChild, { scale:2, useCORS:true, backgroundColor:'#0a1020' });
       document.body.removeChild(wrap);
       this._saveCanvas(canvas, `รายการจัดสอนแทน_${date}.png`);
-    } catch(e) { document.body.removeChild(wrap); this.toast('บันทึกภาพไม่สำเร็จ','error'); }
+    } catch(e) { console.error(e); try{document.body.removeChild(wrap);}catch(_){} this.toast('บันทึกภาพไม่สำเร็จ: '+((e&&e.message)||e),'error'); }
   },
 
   async loadTeacherCache() {
@@ -3901,7 +3903,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const F = "'TH Sarabun New','Sarabun',sans-serif";
   const C = { n0:'#0a1020', n1:'#0f1830', n2:'#16223f', g:'#d6b97e', gh:'#f0dfb2', gl:'#9a7b3f', ink:'#0d1530', ink2:'#2b3550', paper:'#fcf9f0', paper2:'#f4edd9', line:'#d8c9a3', warn:'#7a4d00' };
   const esc = s => App.esc(s);
-  const lattice = `url('data:image/svg+xml;utf8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2756%27 height=%2756%27%3E%3Cpath d=%27M56 0H0V56%27 fill=%27none%27 stroke=%27%23d6b97e%27 stroke-opacity=%27.10%27/%3E%3C/svg%3E')`;
+  const lattice = `linear-gradient(rgba(214,185,126,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(214,185,126,.10) 1px,transparent 1px)`;
   const rule = `<div style="display:flex;align-items:center;gap:12px;justify-content:center;margin:14px auto 0;width:60%"><i style="flex:1;height:1px;background:linear-gradient(90deg,transparent,${C.g})"></i><b style="width:9px;height:9px;background:${C.g};transform:rotate(45deg);display:block"></b><i style="flex:1;height:1px;background:linear-gradient(270deg,transparent,${C.g})"></i></div>`;
 
   Object.assign(App, {
@@ -3917,7 +3919,7 @@ window.addEventListener('DOMContentLoaded', () => {
       subs.forEach(x => { const k = x.absentId + '||' + x.reason; (groups[k] = groups[k] || { absentId:x.absentId, absentName:x.absentName, reason:x.reason, rows:[] }).rows.push(x); });
       const arr = Object.values(groups).sort((a, b) => (a.absentId || '').localeCompare(b.absentId || '', 'th', { numeric:true }));
       const total = subs.length, done = subs.filter(x => x.subId && x.subId !== 'ไม่จัดสอนแทน').length;
-      let h = `<div style="font-family:${F};background-color:${C.n0};background-image:${lattice},radial-gradient(520px 320px at 90% 0%,rgba(214,185,126,.22),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});padding:40px 36px 30px;width:780px;color:${C.gh};box-sizing:border-box;">
+      let h = `<div style="font-family:${F};background-color:${C.n0};background-image:${lattice},radial-gradient(520px 320px at 90% 0%,rgba(214,185,126,.22),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});background-size:56px 56px,56px 56px,auto,auto,auto;padding:40px 36px 30px;width:780px;color:${C.gh};box-sizing:border-box;">
         <div style="text-align:center;padding:6px 0 4px;">
           <div style="font-size:21px;letter-spacing:.42em;color:${C.g};font-weight:700;">${esc(school)}</div>
           <div style="font-size:56px;font-weight:700;color:${C.gh};line-height:1.1;margin-top:6px;">ประกาศจัดสอนแทน</div>
@@ -3976,7 +3978,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const rows = all.map((t, i) => `<tr style="background:${i % 2 ? C.paper2 : '#fffefa'};"><td style="${bd}padding:2px 4px;text-align:center;">${i + 1}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${esc(t.id)}</td><td style="${bd}padding:2px 10px;font-weight:700;">${esc(t.fullName)}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${t.count > 0 ? t.count : ''}</td><td style="${bd}padding:2px 4px;text-align:center;">${total > 0 ? (t.count / total * 100).toFixed(2) + '%' : '0.00%'}</td></tr>`).join('');
       const th = (t, w, al) => `<th style="border:1px solid ${C.n2};padding:3px 6px 5px;color:${C.gh};font-size:21px;font-weight:700;text-align:${al || 'center'};${w ? 'width:' + w + 'px;' : ''}">${t}</th>`;
       const page = `<div style="font-family:${F};background:#fffefa;width:794px;box-sizing:border-box;color:${C.ink};font-size:20px;">
-        <div style="background-color:${C.n0};background-image:${lattice},radial-gradient(420px 220px at 92% 0%,rgba(214,185,126,.28),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});padding:26px 34px 20px;text-align:center;border-bottom:4px solid ${C.g};">
+        <div style="background-color:${C.n0};background-image:${lattice},radial-gradient(420px 220px at 92% 0%,rgba(214,185,126,.28),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});background-size:56px 56px,56px 56px,auto,auto,auto;padding:26px 34px 20px;text-align:center;border-bottom:4px solid ${C.g};">
           <div style="font-size:19px;letter-spacing:.38em;color:${C.g};font-weight:700;">${esc(school)}</div>
           <div style="font-size:42px;font-weight:700;color:${C.gh};line-height:1.15;margin-top:2px;">สถิติจำนวนคาบสอนแทนรายบุคคล</div>
           <div style="font-size:24px;font-weight:700;color:#fff;margin-top:2px;">${esc(dept)}</div>
@@ -4070,7 +4072,7 @@ window.addEventListener('DOMContentLoaded', () => {
   App.toast = function (msg, type) {
     type = IC[type] ? type : 'info';
     const el = document.getElementById('toast'); if (!el) return;
-    el.style.display = 'flex'; el.className = type;
+    el.style.display = 'flex'; el.hidden = false; el.className = type;
     el.innerHTML = `<span class="tz-ic"><svg viewBox="0 0 24 24">${IC[type]}</svg></span><span class="tz-tx"><b>${TT[type]}</b><span>${msg}</span></span><i class="tz-bar"></i>`;
     void el.offsetWidth; el.classList.add('go');
     clearTimeout(this._toastTm);
@@ -4081,7 +4083,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.3 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.5 · Luxe'; sb.appendChild(v);
 })();
 
 </script>
