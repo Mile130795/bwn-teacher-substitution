@@ -667,6 +667,11 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 .sw-swap{text-align:center;font-size:12.5px;color:#d6b97e;margin:6px 0;letter-spacing:.06em}
 .sw-pass{margin:12px 0 0;font-size:13px}.sw-pass summary{cursor:pointer;opacity:.8;padding:4px 0}
 @media(max-width:480px){.sw-flow{flex-direction:column}.sw-arrow{transform:rotate(90deg)}}
+.sw-edit{background:rgba(212,175,106,.12);border:1px solid rgba(212,175,106,.45);border-radius:12px;padding:10px 14px;margin:10px 0;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0}
+.ss-box{border:1px solid rgba(212,175,106,.3);border-radius:12px;padding:12px;text-align:center}
+.ss-box b{display:block;font-size:1.6rem;color:#d4af6a}
+.ss-note{font-size:.85rem;opacity:.75;margin:6px 0}
 
 </style>
 </head>
@@ -929,6 +934,7 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
           <button class="chip active" id="swap-tab-find" onclick="App.swapTab('find')">🔍 ค้นหาคู่แลก</button>
           <button class="chip" id="swap-tab-list" onclick="App.swapTab('list')">📨 คำขอแลกคาบ <span id="swap-tab-badge" class="badge badge-pending" style="display:none;margin-left:4px;"></span></button>
+          <button class="chip" id="swap-tab-stats" onclick="App.swapTab('stats')">📊 สถิติ/ประวัติแลกคาบ</button>
         </div>
 
         <div id="swap-view-find">
@@ -964,6 +970,8 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
             <div class="empty-state"><div class="icon">🔄</div><p>เลือกวันที่แล้วกด ตรวจสอบทุกคาบ</p></div>
           </div>
         </div>
+
+        <div id="swap-view-stats" style="display:none;"><div id="swap-stats-body"></div></div>
 
         <div id="swap-view-list" style="display:none;">
           <div class="card">
@@ -1268,7 +1276,7 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 
 <!-- ══════════════════════════════════════════════════════ -->
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby-dIfcx4bLXnBix0cE_kT-STTiXXckPNfcvb3RwLLYendhcaACAob98_AQEyZ1UexQOw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwIo7qBa1e_ibaildxFNUbBvkaUVpxVBuZytLyti8s9SL1ZHtR7eMzZ_dsXWle8EW6O3A/exec';
 
 const DAY_PALETTES = {
   'อาทิตย์': { bg:'#fff0f3', accent:'#e11d48', header:'#be123c', text:'#881337', label:'วันอาทิตย์', emoji:'🔴' },
@@ -2160,7 +2168,7 @@ const App = {
     if (absentId) excludeIds.add(absentId.toUpperCase());
     const load = this.state.dayLoad;
     let freeList = [], busyList = [];
-    this.state.teachers.filter(t => !excludeIds.has(t.id.toUpperCase())).forEach(t => {
+    this.sameDeptPool(absentId).filter(t => !excludeIds.has(t.id.toUpperCase())).forEach(t => {
       const td   = load[t.id];
       const isSelf = t.id.toUpperCase() === normalized; // ครูคนเดิมของคาบนี้ ไม่นับเป็นชนกัน
       const free = !td || !td.allPeriods.includes(period) || isSelf;
@@ -2314,10 +2322,18 @@ const App = {
     </div>`;
   },
 
+  // ครูสอนแทนต้องเป็นกลุ่มสาระเดียวกับครูที่ไม่อยู่ (ถ้าทราบกลุ่มสาระ)
+  sameDeptPool(absentId) {
+    const a = (this.state.teachers||[]).find(t => t.id.toUpperCase() === String(absentId||'').toUpperCase());
+    const d = a && a.department;
+    return (this.state.teachers||[]).filter(t => !d || !t.department || t.department === d);
+  },
+
   buildSubSelect(blockId, period, curVal) {
     // กรองครูที่ขาดออกไป (ไม่ควรสอนแทนได้)
     const absentIds = new Set(this.state.absentBlocks.filter(b => b.teacherId).map(b => b.teacherId.toUpperCase()));
-    const teachers = this.state.teachers.filter(t => !absentIds.has(t.id.toUpperCase()));
+    const blk = this.state.absentBlocks.find(b => b.id === blockId);
+    const teachers = this.sameDeptPool(blk && blk.teacherId).filter(t => !absentIds.has(t.id.toUpperCase()));
     const load = this.state.dayLoad;
     let freeList = [], busyList = [];
     teachers.forEach(t => {
@@ -2665,7 +2681,7 @@ const App = {
     const { ft, fv } = this.getFilter('ov');
     if (!fv) { this.toast('กรุณาเลือกช่วงเวลา','warn'); return; }
     this.showLoading(true);
-    const r = await this.api({ action:'getOverall', ft, fv });
+    const r = await this.api({ action:'getOverall', ft, fv, dept: (document.getElementById('ov-dept')||{}).value || '' });
     this.showLoading(false);
     const body = document.getElementById('overall-body');
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
@@ -2678,6 +2694,7 @@ const App = {
         ${this.statBox('ไม่จัดสอนแทน', noSub, '#fee2e2', 'var(--danger)')}
         ${this.statBox('รับทราบแล้ว', r.acknowledged, '#fef3c7', 'var(--warn)')}
       </div>
+      ${this.overallDeptHtml ? this.overallDeptHtml(r) : ''}
       <div style="display:flex;gap:8px;margin-bottom:16px;">
         <button onclick="App.printOverall()" class="btn btn-outline btn-sm">🖨 พิมพ์รายงาน PDF</button>
         <button onclick="App.exportOverallImage()" class="btn btn-outline btn-sm">🖼 บันทึกเป็นรูปภาพ</button>
@@ -2825,7 +2842,7 @@ const App = {
       <div style="margin-top:36px;display:flex;justify-content:space-between;">
         <div style="text-align:left;min-width:200px;">
           <p style="margin:0 0 36px;">ลงชื่อ</p>
-          <p style="margin:0;text-align:center;">(${s.headTeacher||'นายนพพร ฉลองกลาง'})</p>
+          <p style="margin:0;text-align:center;">(${(App.headFor&&App.headFor(App.reportDept&&App.reportDept()))||s.headTeacher||'นายนพพร ฉลองกลาง'})</p>
           <p style="margin:2px 0 0;font-size:11.5px;color:#555;text-align:center;">หัวหน้ากลุ่มสาระการเรียนรู้คณิตศาสตร์</p>
         </div>
         <div style="text-align:left;min-width:200px;">
@@ -3944,7 +3961,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
       const dateTh = `${d.getDate()} ${months[d.getMonth()]} พ.ศ. ${d.getFullYear() + 543}`;
       const s = this.state.settings || {};
-      const dept = s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์', school = s.schoolName || 'โรงเรียนบุญวัฒนา';
+      const rd = App.reportDept ? App.reportDept() : '', dept = rd ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(rd) : (s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
       const groups = {};
       subs.forEach(x => { const k = x.absentId + '||' + x.reason; (groups[k] = groups[k] || { absentId:x.absentId, absentName:x.absentName, reason:x.reason, rows:[] }).rows.push(x); });
       const arr = Object.values(groups).sort((a, b) => (a.absentId || '').localeCompare(b.absentId || '', 'th', { numeric:true }));
@@ -4003,7 +4020,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const all = (this.state.teachers || []).map(t => ({ id:t.id, fullName:t.fullName, count:subMap[t.id] || 0 })).sort((a, b) => a.id.localeCompare(b.id, 'th', { numeric:true }));
       const total = all.reduce((x, t) => x + t.count, 0), pad = n => String(n).padStart(2, '0'), n = new Date();
       const nowTH = `${pad(n.getDate())}/${pad(n.getMonth() + 1)}/${n.getFullYear() + 543} ${pad(n.getHours())}:${pad(n.getMinutes())}`;
-      const dept = s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์', school = s.schoolName || 'โรงเรียนบุญวัฒนา';
+      const rd = App.reportDept ? App.reportDept() : '', dept = rd ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(rd) : (s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
       const bd = `border:1px solid ${C.line};`;
       const rows = all.map((t, i) => `<tr style="background:${i % 2 ? C.paper2 : '#fffefa'};"><td style="${bd}padding:2px 4px;text-align:center;">${i + 1}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${esc(t.id)}</td><td style="${bd}padding:2px 10px;font-weight:700;">${esc(t.fullName)}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${t.count > 0 ? t.count : ''}</td><td style="${bd}padding:2px 4px;text-align:center;">${total > 0 ? (t.count / total * 100).toFixed(2) + '%' : '0.00%'}</td></tr>`).join('');
       const th = (t, w, al) => `<th style="border:1px solid ${C.n2};padding:3px 6px 5px;color:${C.gh};font-size:21px;font-weight:700;text-align:${al || 'center'};${w ? 'width:' + w + 'px;' : ''}">${t}</th>`;
@@ -4023,7 +4040,7 @@ window.addEventListener('DOMContentLoaded', () => {
           </table>
           <p style="font-size:17px;color:${C.ink2};margin:8px 0 0;font-weight:700;">หมายเหตุ: ร้อยละคำนวณจากจำนวนคาบสอนแทนของครูแต่ละคน เทียบกับผลรวมทั้งหมดในช่วงวันที่กำหนด</p>
           <div style="margin-top:26px;display:flex;justify-content:space-between;font-size:21px;font-weight:700;">
-            <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc(s.headTeacher || 'นายนพพร ฉลองกลาง')})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">หัวหน้า${esc(dept)}</p></div>
+            <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc((App.headFor && App.headFor(rd)) || (rd ? '..............................' : (s.headTeacher || 'นายนพพร ฉลองกลาง')))})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">หัวหน้า${esc(dept)}</p></div>
             <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc(s.headSchool || 'นายวิเชียร ทองคลี่')})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">ผู้อำนวยการ${esc(school)}</p></div>
           </div>
         </div></div>`;
@@ -4113,7 +4130,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.9 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 5.11 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
@@ -4198,6 +4215,344 @@ window.addEventListener('DOMContentLoaded', () => {
     html += `<div style="display:flex;gap:8px;"><button id="swap-send-btn" onclick="App.submitSwap()" class="btn btn-primary" ${canSend ? '' : 'disabled'}>📨 ${isAdmin ? 'บันทึก/ส่งคำขอ' : 'ส่งคำขอแลกคาบ'}</button>
       <button onclick="App.closeSwapModal()" class="btn btn-secondary">ปิด</button></div>`;
     el.innerHTML = html;
+  };
+})();
+
+/* ── บทบาท (ครู / แอดมินกลุ่มสาระ / แอดมินโรงเรียน) + คำขอแลกคาบ แก้ไข/ยกเลิก + สถิติ/ประวัติแลกคาบ ── */
+(function () {
+  const ss = { get: k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+               set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} } };
+
+  /* level: teacher | dept | school */
+  App.level = function () {
+    if (this.state.role !== 'admin') return this.state.role ? 'teacher' : '';
+    return this.state.level || ss.get('level') || 'school';
+  };
+  App.isDeptAdmin = function () { return this.level() === 'dept'; };
+  App.isSchoolAdmin = function () { return this.level() === 'school'; };
+
+  /* จับค่า level จากการล็อกอิน + แนบ editId ตอนอยู่ในโหมดแก้ไข */
+  const api0 = App.api;
+  App.api = async function (p) {
+    p = p || {};
+    if (this._swapEdit && (p.action === 'getSwapOptions' || p.action === 'checkSwap')) p = Object.assign({}, p, { editId: this._swapEdit.exchangeId });
+    const r = await api0.call(this, p);
+    if (p.action === 'login' && r && r.ok) { this.state.level = r.level || ''; ss.set('level', r.level || ''); }
+    return r;
+  };
+
+  /* เมนู/ป้ายตามบทบาท */
+  const nav0 = App.setupNav;
+  App.setupNav = function () {
+    nav0.apply(this, arguments);
+    const dept = this.isDeptAdmin();
+    ['admin-schedule', 'admin-teachers', 'admin-tools', 'admin-audit'].forEach(k => {
+      const el = document.querySelector(`#nav-admin [data-nav="${k}"]`); if (el) el.style.display = dept ? 'none' : '';
+    });
+    const lab = document.querySelector('#nav-admin .nav-label'); if (lab) lab.textContent = dept ? 'ผู้ดูแลกลุ่มสาระ' : 'ผู้ดูแล';
+  };
+  const side0 = App.updateSidebarUser;
+  App.updateSidebarUser = function () {
+    side0.apply(this, arguments);
+    if (this.state.role === 'admin') {
+      const el = document.getElementById('sb-role');
+      if (el) el.textContent = (this.isDeptAdmin() ? 'แอดมินกลุ่มสาระ' : 'ผู้ดูแลระบบ') + (this.state.department ? ' · ' + App.deptLabel(this.state.department) : '');
+    }
+  };
+  const clr0 = App.clearSession;
+  App.clearSession = function () { this.state.level = ''; ss.set('level', ''); this._swapEdit = null; return clr0.apply(this, arguments); };
+
+  const SC = { 'รอคู่แลกตอบรับ': 'badge-pending', 'รอ Admin อนุมัติ': 'badge-info', 'อนุมัติแล้ว': 'badge-ack', 'คู่แลกปฏิเสธ': 'badge-error', 'ไม่อนุมัติ': 'badge-error', 'ยกเลิก': 'badge-nosub' };
+  const dl = d => App.deptLabel ? App.deptLabel(d) : d;
+
+  /* ── แท็บ ── */
+  App.swapTab = function (t) {
+    this._swapTab = t;
+    ['find', 'list', 'stats'].forEach(k => {
+      const b = document.getElementById('swap-tab-' + k); if (b) b.classList.toggle('active', t === k);
+      const v = document.getElementById('swap-view-' + k); if (v) v.style.display = t === k ? '' : 'none';
+    });
+    if (t === 'list') this.loadSwapList();
+    if (t === 'stats') this.initSwapStats();
+  };
+
+  /* ตัวเลือกขอบเขตของรายการคำขอ ตามบทบาท */
+  const scopeOptions = () => {
+    const lv = App.level();
+    if (lv === 'dept') return [['mine', 'ของฉัน'], ['pending', 'รออนุมัติ (กลุ่มสาระของฉัน)'], ['dept', 'คำขอของกลุ่มสาระ']];
+    if (lv === 'school') return [['mine', 'ของฉัน'], ['pending', 'รออนุมัติ (ทั้งโรงเรียน)'], ['all', 'ทั้งโรงเรียน']];
+    return [['mine', 'ของฉัน']];
+  };
+  App.prepSwapScopes = async function () {
+    const sc = document.getElementById('swap-list-scope'); if (!sc) return;
+    const keep = sc.value;
+    sc.innerHTML = scopeOptions().map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+    if ([...sc.options].some(o => o.value === keep)) sc.value = keep;
+    else if (this.state.role === 'admin' && !this._swapScopeSet) { sc.value = 'pending'; this._swapScopeSet = true; }
+    let df = document.getElementById('swap-list-dept');
+    if (this.isSchoolAdmin()) {
+      if (!df) {
+        df = document.createElement('select'); df.id = 'swap-list-dept'; df.className = 'form-input'; df.style.width = '200px';
+        df.onchange = () => App.loadSwapList(); sc.parentNode.insertBefore(df, sc.nextSibling);
+        await this.fillDeptSelect(df);
+      }
+      df.style.display = (sc.value === 'mine' || sc.value === 'pending') ? 'none' : '';
+    }
+  };
+  App.fillDeptSelect = async function (sel, allText) {
+    if (!this._depts) {
+      await this.loadTeacherCache();
+      this._depts = [...new Set((this.state.teachers || []).map(t => t.department).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+    }
+    sel.innerHTML = `<option value="">${allText || 'ทุกกลุ่มสาระ'}</option>` + this._depts.map(d => `<option value="${this.esc(d)}">${this.esc(dl(d))}</option>`).join('');
+  };
+
+  /* ── รายการคำขอ: ดู / ตอบรับ / อนุมัติ / แก้ไข / ยกเลิก ── */
+  App.loadSwapList = async function () {
+    await this.prepSwapScopes();
+    const body = document.getElementById('swap-list-body');
+    const scope = document.getElementById('swap-list-scope')?.value || 'mine';
+    const dept = document.getElementById('swap-list-dept')?.value || '';
+    body.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div>';
+    const r = await this.api({ action: 'listSwaps', scope, dept });
+    if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; return; }
+    this._swapList = r.swaps || [];
+    this.setSwapBadge(r.waitingForMe || 0, null);
+    if (!this._swapList.length) { body.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>ยังไม่มีคำขอแลกคาบ</p></div>'; return; }
+    const uid = this.state.uid.toUpperCase(), showDept = scope !== 'mine' && this.state.role === 'admin';
+    let html = `<table class="tbl"><thead><tr><th>ผู้ขอ</th><th>คาบที่ขอแลก</th><th>คู่แลก</th><th>ไปสอนคืน</th><th>สถานะ</th><th></th></tr></thead><tbody>`;
+    this._swapList.forEach((x, i) => {
+      const acts = [];
+      if (x.otherId.toUpperCase() === uid && x.status === 'รอคู่แลกตอบรับ') {
+        acts.push(`<button onclick="App.respondSwap(${i},true)" class="btn btn-success btn-sm">ยอมรับ</button>`, `<button onclick="App.respondSwap(${i},false)" class="btn btn-secondary btn-sm">ปฏิเสธ</button>`);
+      }
+      if (x.canApprove && x.status === 'รอ Admin อนุมัติ') {
+        acts.push(`<button onclick="App.approveSwap(${i},true)" class="btn btn-success btn-sm">อนุมัติ</button>`, `<button onclick="App.approveSwap(${i},false)" class="btn btn-secondary btn-sm">ไม่อนุมัติ</button>`);
+      }
+      if (x.canEdit) acts.push(`<button onclick="App.editSwap(${i})" class="btn btn-outline btn-sm">✏️ แก้ไข</button>`);
+      const closed = ['ยกเลิก', 'คู่แลกปฏิเสธ', 'ไม่อนุมัติ'].includes(x.status);
+      if (!closed && (x.canEdit || x.canApprove)) acts.push(`<button onclick="App.cancelSwap(${i})" class="btn btn-danger btn-sm">ยกเลิก</button>`);
+      const note = [x.leaveReason && 'สาเหตุ: ' + x.leaveReason, x.otherNote && 'คู่แลก: ' + x.otherNote, x.approverNote && 'ผู้อนุมัติ: ' + x.approverNote, x.override && 'ข้ามเงื่อนไข: ' + x.override, x.note].filter(Boolean).join(' · ');
+      const dtag = (n, d) => showDept && d ? `<div style="font-size:11px;color:var(--text-3);">${this.esc(dl(d))}</div>` : '';
+      html += `<tr>
+        <td><b>${this.esc(x.requesterName)}</b>${dtag(0, x.requesterDept)}<div style="font-size:11px;color:var(--text-3);">#${this.esc(x.exchangeId)}</div></td>
+        <td style="font-size:12.5px;">${this.thDateShort(x.date)} คาบ ${x.period}<br><span style="color:var(--text-2);">${this.esc(x.room || '')} ${this.esc(x.subjectCode || '')}</span></td>
+        <td><b>${this.esc(x.otherName)}</b>${dtag(0, x.otherDept)}</td>
+        <td style="font-size:12.5px;">${this.thDateShort(x.returnDate)} คาบ ${x.returnPeriod}<br><span style="color:var(--text-2);">${this.esc(x.returnRoom || '')}</span></td>
+        <td><span class="badge ${SC[x.status] || 'badge-info'}">${this.esc(x.status)}</span>${note ? `<div style="font-size:11px;color:var(--text-2);margin-top:4px;max-width:220px;">${this.esc(note)}</div>` : ''}</td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap;">${acts.join('')}</div></td></tr>`;
+    });
+    body.innerHTML = html + '</tbody></table>';
+  };
+
+  /* ── แก้ไขคำขอ: ใช้หน้าค้นหาคู่เดิม (เลือกคู่/คาบคืนใหม่ได้ทุกอย่าง) แล้วส่งเป็น updateSwap ── */
+  App.editSwap = async function (i) {
+    const x = this._swapList[i]; if (!x) return;
+    this._swapEdit = { exchangeId: x.exchangeId, requesterId: x.requesterId, note: x.note || '' };
+    this._swap.leave = [];
+    this.swapTab('find');
+    document.getElementById('swap-date').value = x.date;
+    this.updateSwapDayBadge();
+    const rs = document.getElementById('swap-reason'); if (rs && x.leaveReason) rs.value = x.leaveReason;
+    if (this.state.role === 'admin') {
+      await this.loadTeacherCache();
+      const sel = document.getElementById('swap-teacher');
+      if (sel && ![...sel.options].some(o => o.value === x.requesterId)) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${this.esc(x.requesterId)}">${this.esc(x.requesterName)} (${this.esc(x.requesterId)})</option>`);
+      }
+      if (sel) sel.value = x.requesterId;
+    }
+    this.renderSwapEditBanner(x);
+    await this.loadSwap();
+    this.renderSwapEditBanner(x);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  App.renderSwapEditBanner = function (x) {
+    let b = document.getElementById('swap-edit-banner');
+    if (!this._swapEdit) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.id = 'swap-edit-banner'; const host = document.getElementById('swap-view-find'); host.insertBefore(b, host.firstChild); }
+    const e = this._swapEdit;
+    b.innerHTML = `<div class="sw-edit"><div><b>กำลังแก้ไขคำขอ #${this.esc(e.exchangeId)}</b>
+      <span>เลือกคู่แลกและคาบที่ไปสอนคืนใหม่ได้ทุกอย่าง แล้วกด “ตรวจสอบและส่งคำขอ” ระบบจะยกเลิกคำขอเดิมและบันทึกเป็นคำขอใหม่ (ต้องให้คู่แลกตอบรับใหม่ ยกเว้นแอดมินติ๊กว่าตกลงกันแล้ว)</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="App.cancelSwapEdit()">เลิกแก้ไข</button></div>`;
+  };
+  App.cancelSwapEdit = function () { this._swapEdit = null; this.renderSwapEditBanner(); this.toast('เลิกแก้ไขแล้ว', 'info'); this.swapTab('list'); };
+
+  /* ส่งคำขอ: ถ้าอยู่โหมดแก้ไข → updateSwap */
+  const sub0 = App.submitSwap;
+  App.submitSwap = async function () {
+    if (!this._swapEdit) return sub0.apply(this, arguments);
+    const c = this._swap.ctx, r = this._swap.chk; if (!c || !r) return;
+    const btn = document.getElementById('swap-send-btn'); btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    const override = r.valid ? [] : [...document.querySelectorAll('.swap-ovr:checked')].map(x => x.value);
+    const data = { otherId: c.otherId, date: c.date, period: c.period, returnDate: c.retDate, returnPeriod: c.retPeriod,
+      reason: document.getElementById('swap-reason').value, note: document.getElementById('swap-note').value.trim(),
+      agreed: !!document.getElementById('swap-agreed')?.checked, override, overrideReason: (document.getElementById('swap-ovr-reason')?.value || '').trim() };
+    const res = await this.api({ action: 'updateSwap', exchangeId: this._swapEdit.exchangeId, data: JSON.stringify(data) });
+    if (!res.ok) { btn.disabled = false; btn.textContent = '📨 บันทึกการแก้ไข'; this.toast(res.err, 'error'); return; }
+    this.closeSwapModal();
+    this._swapEdit = null; this.renderSwapEditBanner();
+    this.toast(res.message, 'success');
+    this.refreshSwapBadge();
+    this.swapTab('list');
+  };
+
+  /* ── สถิติ / ประวัติการแลกคาบ ── */
+  App.initSwapStats = async function () {
+    const host = document.getElementById('swap-stats-body'); if (!host) return;
+    const lv0 = this.level() + ':' + this.state.uid;
+    if (host.dataset.ready !== lv0) {
+      const lv = this.level();
+      const scopes = [['me', 'ของฉัน']];
+      if (lv === 'dept') scopes.push(['dept', 'กลุ่มสาระของฉัน']);
+      if (lv === 'school') scopes.push(['school', 'ทั้งโรงเรียน (แยกกลุ่มสาระ)']);
+      host.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="card-header" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        ${scopes.length > 1 ? `<div><label class="form-label">ดูข้อมูลของ</label><select id="ss-scope" class="form-input" style="width:230px;" onchange="App.loadSwapStats()">${scopes.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>` : '<input type="hidden" id="ss-scope" value="me">'}
+        <div id="ss-dept-wrap" style="display:none;"><label class="form-label">กลุ่มสาระ</label><select id="ss-dept" class="form-input" style="width:230px;" onchange="App.loadSwapStats()"></select></div>
+        <div><label class="form-label">ช่วงเวลา</label><select id="ss-range" class="form-input" style="width:190px;" onchange="App.loadSwapStats()">
+          <option value="all">ทั้งหมด</option><option value="month">เดือนนี้</option><option value="semester">ภาคเรียนนี้</option><option value="year">ปีการศึกษานี้</option></select></div>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="App.loadSwapStats()">🔄</button>
+      </div></div><div id="ss-out"></div>`;
+      host.dataset.ready = lv0;
+      if (this.isSchoolAdmin()) await this.fillDeptSelect(document.getElementById('ss-dept'));
+    }
+    this.loadSwapStats();
+  };
+
+  App.loadSwapStats = async function () {
+    const out = document.getElementById('ss-out'); if (!out) return;
+    const scope = document.getElementById('ss-scope').value;
+    const range = document.getElementById('ss-range').value;
+    const dw = document.getElementById('ss-dept-wrap'); if (dw) dw.style.display = scope === 'school' ? '' : 'none';
+    const dept = scope === 'school' ? (document.getElementById('ss-dept').value || '') : '';
+    const cfg = this.state.settings || {}, now = new Date();
+    const yr = cfg.currentYear || (now.getFullYear() + 543);
+    let filterType = '', filterValue = '';
+    if (range === 'month') { filterType = 'month'; filterValue = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'); }
+    if (range === 'semester') { filterType = 'semester'; filterValue = (cfg.currentSemester || '1') + '_' + yr; }
+    if (range === 'year') { filterType = 'year'; filterValue = String(yr); }
+    out.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div>';
+    const r = await this.api({ action: 'getSwapStats', scope, filterType, filterValue, dept });
+    if (!r.ok) { out.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${this.esc(r.err)}</p></div>`; return; }
+    const S = r.summary, box = (t, v) => `<div class="ss-box"><b>${v}</b><span>${t}</span></div>`;
+    let html = `<div class="ss-grid">${scope === 'me' ? box('ขอแลก', S.requested) + box('ถูกขอแลก', S.received) : box('คำขอทั้งหมด', S.total)}${box('แลกสำเร็จ', S.done)}${box('รอดำเนินการ', S.waiting)}${box('ยกเลิก/ไม่อนุมัติ', S.closed)}</div>`;
+    if (r.byDept && r.byDept.length) {
+      html += `<div class="card" style="margin-bottom:14px;overflow:hidden;"><div class="card-header"><h4 style="font-size:14px;font-weight:700;margin:0;">แยกตามกลุ่มสาระ</h4></div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>กลุ่มสาระ</th><th>ยื่นคำขอ</th><th>ถูกขอแลก (ข้ามกลุ่ม)</th><th>แลกสำเร็จ</th><th>รอ</th><th>ยกเลิก</th><th>แลกข้ามกลุ่ม</th></tr></thead><tbody>` +
+        r.byDept.map(d => `<tr><td style="font-weight:600;">${this.esc(dl(d.dept))}</td><td>${d.requests}</td><td>${d.received}</td><td><span class="badge badge-ack">${d.done}</span></td><td>${d.waiting}</td><td>${d.closed}</td><td>${d.crossDept}</td></tr>`).join('') + '</tbody></table></div></div>';
+    }
+    if (scope !== 'me' && r.byTeacher && r.byTeacher.length) {
+      html += `<div class="card" style="margin-bottom:14px;overflow:hidden;"><div class="card-header"><h4 style="font-size:14px;font-weight:700;margin:0;">แยกรายครู</h4></div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>ครู</th>${scope === 'school' ? '<th>กลุ่มสาระ</th>' : ''}<th>ขอแลก</th><th>ถูกขอแลก</th><th>สำเร็จ</th><th>รอ</th><th>ยกเลิก</th></tr></thead><tbody>` +
+        r.byTeacher.map(t => `<tr><td style="font-weight:600;">${this.esc(t.name)}</td>${scope === 'school' ? `<td style="font-size:12.5px;">${this.esc(dl(t.dept))}</td>` : ''}<td>${t.requested}</td><td>${t.received}</td><td><span class="badge badge-ack">${t.done}</span></td><td>${t.waiting}</td><td>${t.closed}</td></tr>`).join('') + '</tbody></table></div></div>';
+    }
+    if (!r.history.length) html += '<div class="card"><div class="empty-state"><div class="icon">📭</div><p>ไม่มีประวัติการแลกคาบในช่วงนี้</p></div></div>';
+    else {
+      html += `<div class="card" style="overflow:hidden;"><div class="card-header"><h4 style="font-size:14px;font-weight:700;margin:0;">ประวัติการแลกคาบ (${r.history.length} รายการ)</h4></div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>วันที่ขอแลก</th><th>${scope === 'me' ? 'ฉันเป็น' : 'ผู้ขอ'}</th><th>คู่แลก</th><th>คาบที่แลก</th><th>ไปสอนคืน</th><th>สถานะ</th></tr></thead><tbody>` +
+        r.history.map(x => {
+          const mid = scope === 'me' ? `<td>${this.esc(x.myRole)}</td>` : `<td><b>${this.esc(x.requesterName)}</b><div style="font-size:11px;color:var(--text-3);">${this.esc(dl(x.requesterDept))}</div></td>`;
+          const other = scope === 'me' ? (x.myRole === 'ผู้ขอ' ? x.otherName : x.requesterName) : x.otherName;
+          const od = scope === 'me' ? '' : `<div style="font-size:11px;color:var(--text-3);">${this.esc(dl(x.otherDept))}</div>`;
+          return `<tr><td style="white-space:nowrap;font-weight:600;">${this.thDateShort(x.date)}</td>${mid}<td><b>${this.esc(other)}</b>${od}</td>
+            <td style="font-size:12.5px;">คาบ ${x.period} ${this.esc(x.room || '')}</td><td style="font-size:12.5px;">${this.thDateShort(x.returnDate)} คาบ ${x.returnPeriod}</td>
+            <td><span class="badge ${SC[x.status] || 'badge-info'}">${this.esc(x.status)}</span></td></tr>`;
+        }).join('') + '</tbody></table></div></div>';
+    }
+    out.innerHTML = html;
+  };
+
+  /* ── ภาพรวมการสอนแทน: ตารางแยกกลุ่มสาระ + ตัวกรองกลุ่มสาระ (แอดมินโรงเรียน) ── */
+  App.overallDeptHtml = function (r) {
+    let h = '';
+    if (r.scopeDept) h += `<div class="ss-note">แสดงเฉพาะกลุ่มสาระ: <b>${this.esc(dl(r.scopeDept))}</b></div>`;
+    if (r.byDept && r.byDept.length) {
+      h += `<div class="card" style="margin-bottom:14px;overflow:hidden;"><div class="card-header"><h4 style="font-size:14px;font-weight:700;margin:0;">แยกตามกลุ่มสาระ</h4></div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>กลุ่มสาระ</th><th>คาบที่ต้องจัดแทน</th><th>จัดแล้ว</th><th>ครูกลุ่มนี้ไปสอนแทน</th></tr></thead><tbody>` +
+        r.byDept.map(d => `<tr><td style="font-weight:600;">${this.esc(dl(d.dept))}</td><td>${d.needSub}</td><td><span class="badge badge-ack">${d.covered}</span></td><td>${d.taught}</td></tr>`).join('') + '</tbody></table></div></div>';
+    }
+    return h;
+  };
+  const ov0 = App.loadOverall;
+  App.loadOverall = async function () {
+    if (this.isSchoolAdmin() && !document.getElementById('ov-dept')) {
+      const bar = document.querySelector('#panel-admin-overall .card-header > div:last-child');
+      if (bar) {
+        const w = document.createElement('div'); w.innerHTML = '<label class="form-label">กลุ่มสาระ</label><select id="ov-dept" class="form-input" style="width:230px;"></select>';
+        bar.insertBefore(w, bar.lastElementChild); await this.fillDeptSelect(w.querySelector('select'));
+      }
+    }
+    return ov0.apply(this, arguments);
+  };
+  /* เปิดหน้าภาพรวม: เตรียมตัวกรองกลุ่มสาระให้ทันที */
+  const nav1 = App.navTo;
+  App.navTo = function (id) {
+    const r = nav1.apply(this, arguments);
+    if (id === 'swap') { this.prepSwapScopes && this.prepSwapScopes(); }
+    return r;
+  };
+})();
+
+/* ── หน้าตั้งค่า: ชื่อหัวหน้ากลุ่มสาระ + helper สำหรับรายงาน ── */
+(function () {
+  const esc = s => App.esc ? App.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const dl = d => App.deptLabel ? App.deptLabel(d) : d;
+
+  /* กลุ่มสาระของรายงานที่กำลังดู: แอดมินกลุ่มสาระ = กลุ่มตน, แอดมินโรงเรียน = ตัวกรองกลุ่มสาระ (ถ้าเลือก) */
+  App.reportDept = function () {
+    if (this.isDeptAdmin && this.isDeptAdmin()) return this.state.department || this.state.dept || '';
+    const el = document.getElementById('ov-dept'); return (el && el.value) || '';
+  };
+  App.headFor = function (dept) {
+    const m = (this.state.settings && this.state.settings.headByDept) || {};
+    return dept ? (m[dept] || '') : '';
+  };
+
+  /* นำทาง */
+  const nav0 = App.navTo;
+  App.navTo = function (id) {
+    if (id !== 'admin-settings') return nav0.apply(this, arguments);
+    if (window.innerWidth < 768 && this.closeSidebar) this.closeSidebar();
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.nav === id));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-admin-settings').classList.add('active');
+    document.getElementById('dash-title').textContent = 'ตั้งค่า';
+    this.loadHeads();
+  };
+
+  function ensureUi() {
+    if (!document.getElementById('panel-admin-settings')) {
+      const host = document.getElementById('panel-admin-audit'); if (!host) return;
+      const p = document.createElement('div'); p.id = 'panel-admin-settings'; p.className = 'panel';
+      p.innerHTML = `<div class="card"><div class="card-header"><h3 style="font-size:14.5px;font-weight:700;margin:0;">⚙️ หัวหน้ากลุ่มสาระ</h3>
+        <p class="ss-note" style="margin:6px 0 0;">ชื่อที่กรอกจะแสดงเป็นผู้ลงนามในรายงานสถิติของกลุ่มสาระนั้น และในข้อความแจ้งหัวหน้ากลุ่มสาระ</p></div>
+        <div id="heads-body" style="padding:14px 18px;"></div></div>`;
+      host.parentNode.insertBefore(p, host.nextSibling);
+    }
+    const nav = document.getElementById('nav-admin');
+    if (nav && !nav.querySelector('[data-nav="admin-settings"]')) {
+      const d = document.createElement('div'); d.className = 'nav-item'; d.dataset.nav = 'admin-settings';
+      d.onclick = () => App.navTo('admin-settings');
+      d.innerHTML = '<span class="nav-icon">⚙️</span><span class="nav-text">ตั้งค่า</span>';
+      nav.appendChild(d);
+    }
+  }
+  const setup0 = App.setupNav;
+  App.setupNav = function () { setup0.apply(this, arguments); ensureUi(); };
+  document.addEventListener('DOMContentLoaded', ensureUi); ensureUi();
+
+  App.loadHeads = async function () {
+    const body = document.getElementById('heads-body'); if (!body) return;
+    body.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div>';
+    const r = await this.api({ action: 'getHeads' });
+    if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${esc(r.err)}</p></div>`; return; }
+    this._heads = r.departments;
+    body.innerHTML = `<div style="display:grid;gap:10px;max-width:640px;">` + r.departments.map((d, i) =>
+      `<div><label class="form-label">${esc(dl(d.department))}</label><input class="form-input head-in" data-i="${i}" value="${esc(d.head)}" maxlength="120" placeholder="เช่น นายสมชาย ใจดี"></div>`).join('') +
+      `</div><div style="margin-top:14px;"><button class="btn btn-primary" onclick="App.saveHeads()">💾 บันทึก</button></div>`;
+  };
+  App.saveHeads = async function () {
+    const o = {}; document.querySelectorAll('.head-in').forEach(el => { o[this._heads[+el.dataset.i].department] = el.value.trim(); });
+    const r = await this.api({ action: 'saveHeads', heads: JSON.stringify(o) });
+    if (!r.ok) { this.toast(r.err || 'บันทึกไม่สำเร็จ', 'error'); return; }
+    try { const s = await this.api({ action: 'getSettings' }); if (s.ok) { this.state.settings = s.settings; } } catch (e) {}
+    this.toast(r.changed ? 'บันทึกแล้ว ' + r.changed + ' รายการ' : 'ไม่มีการเปลี่ยนแปลง', 'success');
   };
 })();
 
