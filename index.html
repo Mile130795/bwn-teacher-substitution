@@ -2288,7 +2288,9 @@ const App = {
     let el  = document.getElementById('absent-block-' + id);
     if (!el) { el = document.createElement('div'); el.id = 'absent-block-' + id; document.getElementById('absent-blocks-wrap').prepend(el); }
     const stripTitle = n => n.replace(/^(นาย|นาง(?:สาว)?|เด็กชาย|เด็กหญิง|ดร\.|ผศ\.|รศ\.|ศ\.)\s*/u, '');
-    const sortedTeachers = [...this.state.teachers].sort((a,b) => stripTitle(a.fullName).localeCompare(stripTitle(b.fullName),'th'));
+    const ad = this.state.department || '';   // จัดสอนแทนเฉพาะกลุ่มสาระของแอดมินที่ล็อกอิน
+    const deptSel = '';
+    const sortedTeachers = [...this.state.teachers].filter(t => !ad || !t.department || t.department === ad || t.id === b.teacherId).sort((a,b) => stripTitle(a.fullName).localeCompare(stripTitle(b.fullName),'th'));
     const tOpts = sortedTeachers.map(t => `<option value="${t.id}" ${b.teacherId===t.id?'selected':''}>${t.fullName} (${t.id})</option>`).join('');
     const rOpts = ['ลาป่วย','ลากิจ','ราชการ','อบรม/สัมมนา','อื่นๆ'].map(r => `<option value="${r}" ${b.reason===r?'selected':''}>${r}</option>`).join('');
     let schedHtml = '';
@@ -2309,7 +2311,7 @@ const App = {
         <button onclick="App.removeAbsentBlock(${id})" class="btn btn-danger btn-sm btn-icon">✕</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div><label class="form-label">ครูที่ไม่อยู่</label>
+        <div>${deptSel}<label class="form-label">ครูที่ไม่อยู่</label>
           <select class="form-input" onchange="App.onBlockTeacherChange(${id},this.value)">
             <option value="">-- เลือกครู --</option>${tOpts}
           </select></div>
@@ -2322,10 +2324,12 @@ const App = {
     </div>`;
   },
 
+  setAssignDept(d) { this.state.assignDept = d; this.state.absentBlocks.forEach(b => this.renderBlock(b.id)); },
+
   // ครูสอนแทนต้องเป็นกลุ่มสาระเดียวกับครูที่ไม่อยู่ (ถ้าทราบกลุ่มสาระ)
   sameDeptPool(absentId) {
     const a = (this.state.teachers||[]).find(t => t.id.toUpperCase() === String(absentId||'').toUpperCase());
-    const d = a && a.department;
+    const d = (this.state.department || (a && a.department));
     return (this.state.teachers||[]).filter(t => !d || !t.department || t.department === d);
   },
 
@@ -4237,7 +4241,7 @@ window.addEventListener('DOMContentLoaded', () => {
     p = p || {};
     if (this._swapEdit && (p.action === 'getSwapOptions' || p.action === 'checkSwap')) p = Object.assign({}, p, { editId: this._swapEdit.exchangeId });
     const r = await api0.call(this, p);
-    if (p.action === 'login' && r && r.ok) { this.state.level = r.level || ''; ss.set('level', r.level || ''); }
+    if (p.action === 'login' && r && r.ok) { this.state.level = r.level || ''; this.state.department = r.department || this.state.department || ''; ss.set('level', r.level || ''); }
     return r;
   };
 
