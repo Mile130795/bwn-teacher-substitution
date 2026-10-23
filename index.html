@@ -690,7 +690,7 @@ tr[style*="background:var(--surface)"] { background:var(--tint) !important; }
 input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:var(--input-bg)!important;color:var(--text-1)!important;border:1px solid var(--line)!important;border-radius:10px;padding:7px 10px}
 
 /* ── ปรับให้เข้าธีม: ป้ายวัน / โลโก้ / ไอคอน ── */
-.daybadge{background:var(--tint)!important;color:var(--gold-hi)!important;border:1px solid var(--line)!important;padding:5px 14px 5px 11px!important;border-radius:99px;display:inline-flex;align-items:center;gap:8px;font-weight:600;letter-spacing:.01em;}
+.daybadge{background:color-mix(in srgb,var(--c,#d6b97e) 12%,transparent)!important;color:color-mix(in srgb,var(--c,#d6b97e) 62%,var(--text-1))!important;border:1px solid color-mix(in srgb,var(--c,#d6b97e) 45%,transparent)!important;padding:5px 14px 5px 11px!important;border-radius:99px;display:inline-flex;align-items:center;gap:8px;font-weight:600;letter-spacing:.01em;}
 .daydot{width:8px;height:8px;border-radius:50%;background:var(--c,#d6b97e);box-shadow:0 0 10px var(--c,#d6b97e);display:inline-block}
 .empty-state .icon{display:flex;justify-content:center;font-size:0!important;margin-bottom:14px;filter:none!important;animation:none!important}
 .lx-ico{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;color:var(--gold);background:radial-gradient(circle at 30% 20%,var(--tint-2),var(--tint));border:1px solid var(--line);box-shadow:var(--shadow-sm),0 0 0 6px var(--tint);animation:floaty 6s ease-in-out infinite}
@@ -1424,13 +1424,13 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwIo7qBa1e_ibaildxFNUbBvkaUVpxVBuZytLyti8s9SL1ZHtR7eMzZ_dsXWle8EW6O3A/exec';
 
 const DAY_PALETTES = {
-  'อาทิตย์': { bg:'#fff0f3', accent:'#e11d48', header:'#be123c', text:'#881337', label:'วันอาทิตย์', emoji:'🔴' },
-  'จันทร์'  : { bg:'#fffbeb', accent:'#f59e0b', header:'#d97706', text:'#92400e', label:'วันจันทร์',  emoji:'🟡' },
-  'อังคาร'  : { bg:'#fff1f2', accent:'#f43f5e', header:'#e11d48', text:'#9f1239', label:'วันอังคาร', emoji:'🩷' },
-  'พุธ'     : { bg:'#f0fdf4', accent:'#22c55e', header:'#16a34a', text:'#14532d', label:'วันพุธ',    emoji:'🟢' },
-  'พฤหัสบดี': { bg:'#fffde7', accent:'#eab308', header:'#ca8a04', text:'#713f12', label:'วันพฤหัสบดี',emoji:'🟠' },
-  'ศุกร์'   : { bg:'#fdf4ff', accent:'#a855f7', header:'#9333ea', text:'#581c87', label:'วันศุกร์',  emoji:'🟣' },
-  'เสาร์'   : { bg:'#f0f9ff', accent:'#0ea5e9', header:'#0284c7', text:'#0c4a6e', label:'วันเสาร์',  emoji:'🔵' },
+  'อาทิตย์': { bg:'#fbecea', accent:'#c8413f', header:'#a8302f', text:'#7a2221', label:'วันอาทิตย์', emoji:'🔴' },
+  'จันทร์'  : { bg:'#fbf3dc', accent:'#d4a21c', header:'#b08412', text:'#6e520a', label:'วันจันทร์',  emoji:'🟡' },
+  'อังคาร'  : { bg:'#fbebf1', accent:'#d6638d', header:'#b84a73', text:'#7d2c4b', label:'วันอังคาร', emoji:'🩷' },
+  'พุธ'     : { bg:'#e7f4ed', accent:'#2f9a6b', header:'#237d55', text:'#14513a', label:'วันพุธ',    emoji:'🟢' },
+  'พฤหัสบดี': { bg:'#fcefe2', accent:'#e07a2c', header:'#c0611a', text:'#7d3c0c', label:'วันพฤหัสบดี',emoji:'🟠' },
+  'ศุกร์'   : { bg:'#e8f2fb', accent:'#3d8bd3', header:'#2a6fb0', text:'#184772', label:'วันศุกร์',  emoji:'🔵' },
+  'เสาร์'   : { bg:'#f0ebf8', accent:'#8a62c8', header:'#6e47ab', text:'#46296f', label:'วันเสาร์',  emoji:'🟣' },
 };
 const DEFAULT_PAL = { bg:'#f8fafc', accent:'#6366f1', header:'#4f46e5', text:'#1e1b4b', label:'', emoji:'📅' };
 
@@ -1808,7 +1808,7 @@ const App = {
     const dayName = this.getDayName(date);
     const pal     = DAY_PALETTES[dayName] || DEFAULT_PAL;
     let html = `<div id="home-export-content">
-      <div style="margin-bottom:16px;padding:14px 18px;background:var(--hero-bg);border:1px solid var(--hero-line);border-radius:14px;color:var(--hero-fg);">
+      <div style="margin-bottom:16px;padding:14px 18px;background:radial-gradient(460px 180px at 100% 0%,${pal.accent}40,transparent 70%),var(--hero-bg);border:1px solid var(--hero-line);border-radius:14px;color:var(--hero-fg);box-shadow:inset 4px 0 0 ${pal.accent};">
         <p style="margin:0;font-size:18px;font-weight:700;"><i class="daydot" style="--c:${pal.accent};margin-right:8px;vertical-align:middle"></i>${this.thDateFull(date)}</p>
         <p style="margin:2px 0 0;font-size:13px;opacity:.85;font-weight:500;">จำนวน ${subs.length} คาบ</p>
       </div>`;
@@ -2210,7 +2210,7 @@ const App = {
     const db = document.getElementById('assign-day-badge');
     if (date) {
       const day = this.getDayName(date); const pal = DAY_PALETTES[day] || DEFAULT_PAL;
-      db.innerHTML = `<span style="background:${pal.bg};color:${pal.text};" class="daybadge"><i class="daydot" style="--c:${pal.accent}"></i>${pal.label}</span>`;
+      db.innerHTML = `<span style="background:${pal.bg};color:${pal.text};--c:${pal.accent};" class="daybadge"><i class="daydot"></i>${pal.label}</span>`;
     } else db.innerHTML = '';
   },
 
@@ -3307,7 +3307,7 @@ const App = {
     const db = document.getElementById('swap-day-badge'); if (!db) return;
     if (!date) { db.innerHTML = ''; return; }
     const pal = DAY_PALETTES[this.getDayName(date)] || DEFAULT_PAL;
-    db.innerHTML = `<span style="background:${pal.bg};color:${pal.text};" class="daybadge"><i class="daydot" style="--c:${pal.accent}"></i>${pal.label}</span>`;
+    db.innerHTML = `<span style="background:${pal.bg};color:${pal.text};--c:${pal.accent};" class="daybadge"><i class="daydot"></i>${pal.label}</span>`;
   },
 
   addSwapLeaveDate() {
@@ -4068,35 +4068,36 @@ window.addEventListener('DOMContentLoaded', () => {
       subs.forEach(x => { const k = x.absentId + '||' + x.reason; (groups[k] = groups[k] || { absentId:x.absentId, absentName:x.absentName, reason:x.reason, rows:[] }).rows.push(x); });
       const arr = Object.values(groups).sort((a, b) => (a.absentId || '').localeCompare(b.absentId || '', 'th', { numeric:true }));
       const total = subs.length, done = subs.filter(x => x.subId && x.subId !== 'ไม่จัดสอนแทน').length;
-      let h = `<div style="font-family:${F};background-color:${C.n0};background-image:${lattice},radial-gradient(520px 320px at 90% 0%,rgba(214,185,126,.22),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});background-size:56px 56px,56px 56px,auto,auto,auto;padding:40px 36px 30px;width:780px;color:${C.gh};box-sizing:border-box;">
+      const dc = (pal && pal.accent) || C.g, dk = (pal && pal.header) || C.gl, pb = (pal && pal.bg) || C.paper2;
+      let h = `<div style="font-family:${F};border-top:7px solid ${dc};background-color:${C.n0};background-image:${lattice},radial-gradient(560px 340px at 92% 0%,${dc}55,transparent 70%),radial-gradient(420px 260px at 0% 100%,${dc}22,transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});background-size:56px 56px,56px 56px,auto,auto,auto;padding:40px 36px 30px;width:780px;color:${C.gh};box-sizing:border-box;">
         <div style="text-align:center;padding:6px 0 4px;">
           <div style="font-size:21px;letter-spacing:.42em;color:${C.g};font-weight:700;">${esc(school)}</div>
           <div style="font-size:56px;font-weight:700;color:${C.gh};line-height:1.1;margin-top:6px;">ประกาศจัดสอนแทน</div>
-          <div style="font-size:31px;font-weight:700;color:#fff;margin-top:6px;">วัน${dayNames[d.getDay()]}ที่ ${dateTh}</div>
+          <div style="font-size:31px;font-weight:700;color:#fff;margin-top:6px;"><span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:${dc};box-shadow:0 0 0 4px ${dc}33,0 0 16px ${dc};margin-right:14px;vertical-align:4px;"></span>วัน${dayNames[d.getDay()]}ที่ ${dateTh}</div>
           <div style="font-size:21px;color:${C.g};margin-top:2px;font-weight:700;">${esc(dept)}</div>
-          ${rule}
+          ${rule.split(C.g).join(dc)}
         </div>
         <div style="display:flex;gap:12px;justify-content:center;margin:20px 0 22px;">
-          <div style="padding:6px 22px;border:1px solid ${C.g};border-radius:99px;font-size:24px;font-weight:700;color:${C.gh};">ทั้งหมด ${total} คาบ</div>
-          <div style="padding:6px 22px;border:1px solid ${C.g};border-radius:99px;font-size:24px;font-weight:700;color:${C.n0};background:linear-gradient(135deg,${C.gh},${C.g});">จัดแล้ว ${done} คาบ</div>
+          <div style="padding:6px 22px;border:1px solid ${dc};border-radius:99px;font-size:24px;font-weight:700;color:${C.gh};">ทั้งหมด ${total} คาบ</div>
+          <div style="padding:6px 22px;border:1px solid ${dc};border-radius:99px;font-size:24px;font-weight:700;color:#fff;background:linear-gradient(135deg,${dc},${dk});text-shadow:0 1px 2px rgba(0,0,0,.25);">จัดแล้ว ${done} คาบ</div>
         </div>`;
       arr.forEach(g => {
-        h += `<div style="background:${C.paper};border-radius:18px;margin-bottom:18px;overflow:hidden;border:1px solid ${C.g};box-shadow:0 14px 34px -14px rgba(0,0,0,.7);">
-          <div style="padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid ${C.g};background:linear-gradient(180deg,#fffdf6,${C.paper2});">
+        h += `<div style="background:${C.paper};border-radius:18px;margin-bottom:18px;overflow:hidden;border:1px solid ${dc};border-left:7px solid ${dc};box-shadow:0 14px 34px -14px rgba(0,0,0,.7);">
+          <div style="padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid ${dc};background:linear-gradient(180deg,#fffdf6,${pb});">
             <div>
-              <div style="font-size:30px;font-weight:700;color:${C.ink};line-height:1.2;"><span style="color:${C.gl};font-size:23px;margin-right:8px;">${esc(g.absentId)}</span>${esc(g.absentName)}</div>
-              <span style="display:inline-block;margin-top:5px;padding:1px 16px 3px;background:${C.n1};color:${C.gh};border-radius:99px;font-size:21px;font-weight:700;">สาเหตุ: ${esc(g.reason || 'ไม่ระบุ')}</span>
+              <div style="font-size:30px;font-weight:700;color:${C.ink};line-height:1.2;"><span style="color:${dk};font-size:23px;margin-right:8px;">${esc(g.absentId)}</span>${esc(g.absentName)}</div>
+              <span style="display:inline-block;margin-top:5px;padding:1px 16px 3px;background:${dk};color:#fff;border-radius:99px;font-size:21px;font-weight:700;">สาเหตุ: ${esc(g.reason || 'ไม่ระบุ')}</span>
             </div>
-            <div style="padding:2px 20px 4px;border:2px solid ${C.n1};border-radius:99px;font-size:23px;font-weight:700;color:${C.n1};white-space:nowrap;">${g.rows.length} คาบ</div>
+            <div style="padding:2px 20px 4px;border:2px solid ${dk};border-radius:99px;font-size:23px;font-weight:700;color:${dk};white-space:nowrap;">${g.rows.length} คาบ</div>
           </div>
-          <table style="width:100%;border-collapse:collapse;white-space:nowrap;"><thead><tr style="background:${C.n1};">
+          <table style="width:100%;border-collapse:collapse;white-space:nowrap;"><thead><tr style="background:${C.n1};box-shadow:inset 0 -3px 0 ${dc};">
             ${['คาบ','รหัสวิชา','ระดับชั้น','ห้อง','ครูสอนแทน'].map((t, i) => `<th style="padding:8px 14px 10px;color:${C.gh};font-size:22px;font-weight:700;text-align:${i ? 'left' : 'center'};${i ? '' : 'width:64px;'}">${t}</th>`).join('')}
           </tr></thead><tbody>`;
         g.rows.sort((a, b) => a.period - b.period).forEach((x, i) => {
           const no = !x.subId || x.subId === 'ไม่จัดสอนแทน';
           const bd = `border-bottom:1px solid ${C.line};`;
           h += `<tr style="background:${i % 2 ? C.paper2 : C.paper};">
-            <td style="padding:7px 10px;text-align:center;${bd}"><span style="width:38px;height:38px;border-radius:50%;background:${C.n1};color:${C.gh};font-weight:700;font-size:23px;display:inline-flex;align-items:center;justify-content:center;border:2px solid ${C.g};line-height:1;padding-bottom:3px;box-sizing:border-box;">${esc(x.period)}</span></td>
+            <td style="padding:7px 10px;text-align:center;${bd}"><span style="width:38px;height:38px;border-radius:50%;background:${C.n1};color:${C.gh};font-weight:700;font-size:23px;display:inline-flex;align-items:center;justify-content:center;border:2px solid ${dc};line-height:1;padding-bottom:3px;box-sizing:border-box;">${esc(x.period)}</span></td>
             <td style="padding:7px 10px;${bd}font-size:23px;font-weight:700;color:${C.ink};">${esc(x.subjectCode || '—')}</td>
             <td style="padding:7px 10px;${bd}font-size:23px;color:${C.ink2};font-weight:700;">${esc(x.room || '—')}</td>
             <td style="padding:7px 10px;${bd}font-size:23px;color:${C.ink2};font-weight:700;">${esc(x.classroom || '—')}</td>
@@ -4232,7 +4233,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.0 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.2 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
