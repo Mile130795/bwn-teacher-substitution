@@ -777,6 +777,10 @@ input[type=date]:not(.form-input),input[type=month]:not(.form-input){background:
 .ss-box span{font-size:12px;color:var(--text-2)}
 .ss-note{font-size:.85rem;opacity:.75;margin:6px 0}
 
+#lx-imgview .iv-act{display:flex;gap:10px;justify-content:center;padding:12px 14px 0;flex-wrap:wrap}
+#lx-imgview .iv-act .btn{padding:10px 18px;text-decoration:none}
+#lx-imgview .iv-bar{padding-top:max(12px,env(safe-area-inset-top))}
+
 /* ── ไอคอนเส้น ── */
 .ic { width:1.12em; height:1.12em; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.2em; flex-shrink:0; display:inline-block; }
 .ic.fill { fill:currentColor; }
@@ -3057,12 +3061,7 @@ const App = {
       const imgH   = imgW / ratio;
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG',
         (pW - imgW) / 2, (pH - imgH) / 2, imgW, imgH);
-      if (this._isIOS()) {
-        window.open(pdf.output('bloburl'), '_blank');
-      } else {
-        pdf.save(`สถิติจำนวนคาบสอนแทนรายบุคคล_${this.filterFilename(ft,fv)}.pdf`);
-      }
-      this.toast('ดาวน์โหลด PDF เรียบร้อยแล้ว','success');
+      this._deliverPdf(pdf, `สถิติจำนวนคาบสอนแทนรายบุคคล_${this.filterFilename(ft,fv)}.pdf`, canvas);
     } catch(err) {
       console.error(err);
       this.toast('ไม่สามารถสร้าง PDF ได้: '+err.message,'error');
@@ -4233,33 +4232,50 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.2 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.3 · Luxe'; sb.appendChild(v);
 })();
 
-/* ── บันทึกภาพ: ไม่ใช้ window.open (ถูกบล็อกใน LINE/iOS) → แสดงภาพในหน้าเดียวกัน กดค้างเพื่อบันทึก / แชร์ ── */
+/* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
 (function () {
-  const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent);
-  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  function overlay(url, name, blob) {
-    let o = document.getElementById('lx-imgview'); if (o) o.remove();
-    o = document.createElement('div'); o.id = 'lx-imgview';
-    const canShare = blob && navigator.canShare && (() => { try { return navigator.canShare({ files: [new File([blob], name, { type: 'image/png' })] }); } catch (e) { return false; } })();
-    o.innerHTML = `<div class="iv-bar"><span>กดค้างที่ภาพ แล้วเลือก “บันทึกภาพ”</span>${canShare ? '<button class="btn btn-gold" id="iv-share">แชร์/บันทึก</button>' : ''}<button class="btn btn-secondary" id="iv-x">ปิด</button></div><div class="iv-body"><img src="${url}" alt="${App.esc(name)}"></div>`;
-    document.body.appendChild(o);
-    o.querySelector('#iv-x').onclick = () => o.remove();
-    const sh = o.querySelector('#iv-share');
-    if (sh) sh.onclick = async () => { try { await navigator.share({ files: [new File([blob], name, { type: 'image/png' })] }); } catch (e) {} };
+  const ua = navigator.userAgent;
+  const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(ua);
+  const ios = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)) || navigator.standalone === true;
+  const inPage = ios || inApp || standalone;
+  const canShareFile = f => { try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } };
+  function overlay(o) {
+    let el = document.getElementById('lx-imgview'); if (el) el.remove();
+    el = document.createElement('div'); el.id = 'lx-imgview';
+    const share = o.file && canShareFile(o.file);
+    el.innerHTML = `<div class="iv-bar"><span>${o.hint}</span><button class="btn btn-secondary" id="iv-x">ปิด</button></div>
+      <div class="iv-act">${share ? `<button class="btn btn-gold" id="iv-share">${o.shareLabel}</button>` : ''}<a class="btn btn-secondary" id="iv-dl" href="${o.url}" download="${o.name}">${o.dlLabel}</a></div>
+      <div class="iv-body"><img src="${o.img}" alt="${o.name}"></div>`;
+    document.body.appendChild(el);
+    el.querySelector('#iv-x').onclick = () => { el.remove(); try { URL.revokeObjectURL(o.url); } catch (e) {} };
+    const sh = el.querySelector('#iv-share');
+    if (sh) sh.onclick = async () => { try { await navigator.share({ files: [o.file], title: o.name }); } catch (e) {} };
   }
   App._saveCanvas = function (canvas, filename) {
     const dataUrl = canvas.toDataURL('image/png');
-    if (ios || inApp) {
-      canvas.toBlob(b => { overlay(b ? URL.createObjectURL(b) : dataUrl, filename, b); }, 'image/png');
-      App.toast('สร้างภาพแล้ว กดค้างที่ภาพเพื่อบันทึก', 'success');
+    if (inPage) {
+      canvas.toBlob(b => {
+        const file = b ? new File([b], filename, { type: 'image/png' }) : null;
+        overlay({ img: dataUrl, url: b ? URL.createObjectURL(b) : dataUrl, name: filename, file,
+          hint: 'กดค้างที่ภาพแล้วเลือก “บันทึกลงในรูปภาพ” หรือกดปุ่มแชร์', shareLabel: 'แชร์ / บันทึกภาพ', dlLabel: 'ดาวน์โหลดไฟล์' });
+      }, 'image/png');
+      App.toast('สร้างภาพแล้ว', 'success');
       return;
     }
     const a = document.createElement('a'); a.href = dataUrl; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     App.toast('บันทึกภาพสำเร็จ', 'success');
+  };
+  App._deliverPdf = function (pdf, filename, canvas) {
+    if (!inPage) { pdf.save(filename); App.toast('ดาวน์โหลด PDF เรียบร้อยแล้ว', 'success'); return; }
+    const blob = pdf.output('blob'), file = new File([blob], filename, { type: 'application/pdf' });
+    overlay({ img: canvas.toDataURL('image/jpeg', .9), url: URL.createObjectURL(blob), name: filename, file,
+      hint: 'ตัวอย่างรายงาน (PDF หน้าเดียว)', shareLabel: 'แชร์ / บันทึก PDF', dlLabel: 'เปิด/ดาวน์โหลด PDF' });
+    App.toast('สร้าง PDF แล้ว', 'success');
   };
 })();
 
