@@ -2848,7 +2848,7 @@ const App = {
   async loadAdminAck() {
     const date = document.getElementById('admin-ack-date').value; if (!date) return;
     this.showLoading(true);
-    const r = await this.api({ action:'getSubstitutes', date });
+    const r = await this.api({ action:'getSubstitutes', date, incSwap:1 });
     this.showLoading(false);
     const body = document.getElementById('admin-ack-body');
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
@@ -4303,7 +4303,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.9 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.0 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
