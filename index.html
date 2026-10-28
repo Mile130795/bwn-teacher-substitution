@@ -1847,7 +1847,7 @@ const App = {
     const expBtns = document.getElementById('home-export-btns');
     expBtns.innerHTML = subs.length > 0 && s.enableExportImage
       ? `<button onclick="App.exportImage()" class="btn btn-outline btn-sm">🖼 บันทึกภาพ</button>` : '';
-    if (subs.length === 0) { body.innerHTML = `<div class="empty-state"><div class="icon">🎉</div><p>ไม่มีการสอนแทนในวันที่ ${this.thDateFull(date)}</p></div>`; return; }
+    if (subs.length === 0) { body.innerHTML = `<div class="empty-state"><div class="icon">🎉</div><p>ไม่มีการสอนแทนในวันที่ ${this.thDateFull(date)}${this.diagNote(r)}</p></div>`; return; }
     const groups = {};
     subs.forEach(sub => {
       const key = sub.absentId + '||' + sub.reason;
@@ -2275,6 +2275,13 @@ const App = {
     this.loadAssignExisting();
   },
 
+  diagNote(r) {
+    if (this.state.role !== 'admin') return '';
+    const d = r && r.diag;
+    if (!d) return `<br><small style="color:var(--text-3)">(Code.gs บน Apps Script ยังเป็นเวอร์ชันเก่า — ต้อง Deploy New version)</small>`;
+    return `<br><small style="color:var(--text-3)">ตรวจระบบ ${d.ver}: ชีทมี ${d.sheetRows} แถว · ตรงวันนี้ ${d.sameDay} แถว (ยกเลิก ${d.cancelled} · แลกคาบที่ซ่อน ${d.swaps})</small>`;
+  },
+
   async loadAssignExisting() {
     const date = document.getElementById('assign-date').value;
     const el = document.getElementById('assign-existing');
@@ -2282,7 +2289,7 @@ const App = {
     el.style.display = 'none'; el.innerHTML = '';
     const r = await this.api({ action:'getSubstitutes', date, fresh:1 });
     if (!r.ok) { el.style.display = ''; el.innerHTML = `<div class="card" style="padding:14px 18px;color:var(--text-2);">โหลดรายการที่บันทึกไว้แล้วของวันนี้ไม่สำเร็จ (${this.esc(r.err||'ไม่ทราบสาเหตุ')}) <button class="btn btn-outline btn-sm" onclick="App.loadAssignExisting()">ลองใหม่</button></div>`; return; }
-    if (!(r.substitutes?.length)) return;
+    if (!(r.substitutes?.length)) { if (this.state.role === 'admin') { el.style.display = ''; el.innerHTML = `<div class="card" style="padding:12px 18px;color:var(--text-3);font-size:12.5px;">ยังไม่มีรายการสอนแทนที่บันทึกไว้ของวันนี้${this.diagNote(r)}</div>`; } return; }
     const subs = r.substitutes;
     // จัดกลุ่มตาม absentId
     const groups = {};
@@ -4304,7 +4311,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.2 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.3 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
