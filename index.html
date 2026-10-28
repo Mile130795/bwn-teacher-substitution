@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ระบบแลกคาบและจัดสอนแทน</title>
 <meta name="theme-color" content="#f5f2ea">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="สอนแทน·แลกคาบ">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script>(function(){var p='auto';try{p=localStorage.getItem('lx-theme')||'auto';}catch(e){}var t=p==='auto'?(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='dark'?'#0a1020':'#f5f2ea';})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -847,6 +854,29 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
 .nav-item { margin-top:1px !important; margin-bottom:1px !important; }
 .lx-seg .chip.active .badge { background:linear-gradient(135deg,var(--g1),var(--g3)) !important; color:#0a1020 !important; border-color:transparent !important; }
 
+/* จัดสอนแทน: บันทึกการลาอย่างเดียว / เหตุผลการจัดอัตโนมัติ */
+.lx-leave { display:flex; gap:10px; align-items:flex-start; margin:0 0 12px; padding:10px 12px; border-radius:12px; background:var(--soft); border:1px dashed var(--line); cursor:pointer; font-size:13.5px; color:var(--text-1); }
+.lx-leave input { margin-top:3px; width:16px; height:16px; flex-shrink:0; }
+.lx-leave small { display:block; font-size:11.5px; color:var(--text-3); margin-top:2px; }
+.lx-auto-why { display:inline-flex; gap:5px; align-items:center; font-size:11.5px; color:var(--gold-hi); background:var(--tint); border:1px solid var(--line-soft); border-radius:8px; padding:2px 8px; margin-top:4px; }
+
+/* ป๊อปอัปจัดการครู/รีเซ็ตรหัส */
+#teacher-modal, #reset-pwd-modal { background:var(--overlay) !important; z-index:9000 !important; }
+#teacher-modal > div, #reset-pwd-modal > div { background:var(--modal-bg) !important; border:1px solid var(--line); box-shadow:var(--shadow-md) !important; color:var(--text-1); animation:modalIn .45s var(--ease) both; }
+#session-warn-modal > div { width:min(380px, calc(100vw - 32px)) !important; }
+#session-warn-modal button { white-space:nowrap; }
+
+/* ครูที่แนะนำรายคาบ */
+.lx-sugg { display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:5px; }
+.lx-sg-lbl { font-size:11px; color:var(--text-3); letter-spacing:.04em; margin-right:2px; }
+.lx-sg-none { font-size:11.5px; color:var(--warn); }
+.lx-sg { all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:5px; padding:2px 4px 2px 8px; border-radius:99px; font-size:12px; color:var(--text-1); background:var(--btn-sec-bg); border:1px solid var(--line); transition:border-color .2s, background .2s, transform .2s var(--spring); font-family:inherit; }
+.lx-sg:hover { border-color:var(--line-strong); transform:translateY(-1px); }
+.lx-sg i { font-style:normal; color:var(--gold); font-size:12px; }
+.lx-sg b { font-weight:700; font-size:11px; min-width:24px; text-align:center; padding:1px 6px; border-radius:99px; background:var(--soft-2); }
+.lx-sg.good b { background:var(--ok-bg); color:var(--ok); } .lx-sg.mid b { background:var(--warn-bg); color:var(--warn); } .lx-sg.low b { background:var(--bad-bg); color:var(--bad); }
+.lx-sg.on { border-color:var(--gold); background:var(--tint-2); box-shadow:0 0 0 2px var(--tint); }
+
 </style>
 </head>
 <body>
@@ -1191,6 +1221,7 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
         </div>
         <div id="absent-blocks-wrap"></div>
         <div id="assign-actions" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <button onclick="App.autoAssign()" class="btn btn-outline" title="ระบบเลือกครูที่ว่างและภาระน้อยที่สุดให้ แล้วค่อยตรวจก่อนบันทึก">✨ จัดอัตโนมัติ</button>
           <button onclick="App.analyzeAndSave()" class="btn btn-primary">🔍 วิเคราะห์และบันทึก</button>
         </div>
         <div id="assign-existing" style="display:none;margin-bottom:16px;"></div>
@@ -1364,7 +1395,7 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
 
       <!-- Teacher modal -->
       <div id="teacher-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:calc(100%-32px);box-shadow:0 20px 60px rgba(30,27,75,.2);max-height:90vh;overflow-y:auto;">
+        <div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(30,27,75,.2);max-height:90vh;overflow-y:auto;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
             <h3 id="teacher-modal-title" style="font-size:16px;font-weight:700;margin:0;">เพิ่มครูใหม่</h3>
             <button onclick="App.closeTeacherModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-3);padding:2px 6px;">✕</button>
@@ -1388,8 +1419,13 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
               <label class="form-label">บทบาท</label>
               <select id="tf-role" class="form-input">
                 <option value="Teacher">ครู</option>
-                <option value="Admin">ผู้ดูแลระบบ (Admin)</option>
+                <option value="DeptAdmin">แอดมินกลุ่มสาระ (DeptAdmin)</option>
+                <option value="Admin">แอดมินโรงเรียน (Admin)</option>
               </select>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label class="form-label">กลุ่มสาระ</label>
+              <select id="tf-dept" class="form-input"></select>
             </div>
             <div id="tf-password-row" style="margin-bottom:20px;">
               <label class="form-label">รหัสผ่านเริ่มต้น (วันเกิด DDMMYYYY)</label>
@@ -1405,7 +1441,7 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
 
       <!-- Reset password modal -->
       <div id="reset-pwd-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:18px;padding:28px;max-width:380px;width:calc(100%-32px);box-shadow:0 20px 60px rgba(30,27,75,.2);">
+        <div style="background:#fff;border-radius:18px;padding:28px;max-width:380px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(30,27,75,.2);">
           <h3 style="font-size:16px;font-weight:700;margin:0 0 6px;">รีเซ็ตรหัสผ่าน</h3>
           <p id="reset-pwd-name" style="font-size:13px;color:var(--text-2);margin:0 0 18px;"></p>
           <div style="margin-bottom:20px;">
@@ -1797,7 +1833,7 @@ const App = {
     const r = await this.api({ action:'getSubstitutes', date, _t: Date.now() });
     if (this._settingsReady) await this._settingsReady; // กันหน้า public แสดงผลไม่ครบเพราะ settings ยังมาไม่ถึง
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
-    const subs = r.substitutes || [];
+    const subs = (r.substitutes || []).filter(x => x.subId && x.subId !== 'ไม่จัดสอนแทน');
     const s    = this.state.settings;
     const expBtns = document.getElementById('home-export-btns');
     expBtns.innerHTML = subs.length > 0 && s.enableExportImage
@@ -1822,7 +1858,7 @@ const App = {
           <div style="width:36px;height:36px;background:linear-gradient(135deg,#f0dfb2,#a88a4f);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0a1020;flex-shrink:0;">👤</div>
           <div>
             <p style="margin:0;font-size:15px;font-weight:700;color:var(--text-1);">${g.absentName}</p>
-            <p style="margin:0;font-size:12.5px;color:var(--text-2);font-weight:500;">${g.reason || 'ไม่ระบุสาเหตุ'}</p>
+            <p style="margin:0;font-size:12.5px;color:var(--text-2);font-weight:500;">${g.reason || (this.state.token ? 'ไม่ระบุสาเหตุ' : 'ไม่อยู่ปฏิบัติงาน')}</p>
           </div>
         </div>
         <div style="overflow-x:auto;"><table class="tbl">
@@ -1931,8 +1967,8 @@ const App = {
     </tr></thead><tbody>`;
     list.forEach(t => {
       const isActive = t.status === 'Active';
-      const roleBadge = t.role === 'Admin'
-        ? `<span class="badge" style="background:#ede9fe;color:#5b21b6;">Admin</span>`
+      const roleBadge = t.role === 'Admin' ? `<span class="badge badge-info">แอดมินโรงเรียน</span>`
+        : t.role === 'DeptAdmin' ? `<span class="badge badge-pending">แอดมินกลุ่มสาระ</span>`
         : `<span class="badge" style="background:var(--surface);color:var(--text-2);">ครู</span>`;
       const statusBadge = isActive
         ? `<span class="badge badge-ack">ปฏิบัติงาน</span>`
@@ -1940,7 +1976,7 @@ const App = {
       const rowStyle = isActive ? '' : ' style="opacity:.55;"';
       html += `<tr${rowStyle}>
         <td><span style="font-weight:700;color:var(--primary);font-size:13px;">${t.id}</span></td>
-        <td style="font-weight:600;">${t.fullName}</td>
+        <td style="font-weight:600;">${t.fullName}${t.department ? `<div style="font-size:11.5px;font-weight:400;color:var(--text-3);">${this.esc(App.deptLabel ? App.deptLabel(t.department) : t.department)}</div>` : ''}</td>
         <td style="color:var(--text-2);">${t.shortName || '—'}</td>
         <td>${roleBadge}</td>
         <td>${statusBadge}</td>
@@ -1969,6 +2005,9 @@ const App = {
     const title = document.getElementById('teacher-modal-title');
     const pwRow = document.getElementById('tf-password-row');
     document.getElementById('teacher-form').reset();
+    const dsel = document.getElementById('tf-dept');
+    if (dsel) { const ds = [...new Set((this._teacherData||[]).map(x => x.department).filter(Boolean))].sort((a,b) => a.localeCompare(b,'th',{numeric:true}));
+      dsel.innerHTML = '<option value="">— ไม่ระบุ —</option>' + ds.map(d => `<option value="${this.esc(d)}">${this.esc(App.deptLabel ? App.deptLabel(d) : d)}</option>`).join(''); }
     if (id) {
       const t = this._teacherData.find(x => x.id === id);
       if (!t) return;
@@ -1978,6 +2017,7 @@ const App = {
       document.getElementById('tf-name').value  = t.fullName;
       document.getElementById('tf-short').value = t.shortName || '';
       document.getElementById('tf-role').value  = t.role || 'Teacher';
+      if (dsel) dsel.value = t.department || '';
       pwRow.style.display = 'none';
     } else {
       title.textContent = 'เพิ่มครูใหม่';
@@ -1998,11 +2038,12 @@ const App = {
     const fullName = document.getElementById('tf-name').value.trim();
     const shortName= document.getElementById('tf-short').value.trim();
     const role     = document.getElementById('tf-role').value;
+    const department = (document.getElementById('tf-dept') || {}).value || '';
     const password = document.getElementById('tf-password').value.trim();
     const isNew    = !this._teacherEditId;
     if (isNew && !password) { this.toast('กรุณากรอกรหัสผ่านเริ่มต้น','warn'); return; }
     this.showLoading(true);
-    const r = await this.api({ action:'saveTeacher', token:this.state.token, data: JSON.stringify({ id, fullName, shortName, role, isNew, password }) });
+    const r = await this.api({ action:'saveTeacher', token:this.state.token, data: JSON.stringify({ id, fullName, shortName, role, department, isNew, password }) });
     this.showLoading(false);
     if (!r.ok) { this.toast(r.err,'error'); return; }
     this.toast(r.message,'success');
@@ -2074,7 +2115,8 @@ const App = {
     try {
       const r = await this.api({ action:'getSubstitutes', date });
       if (!r.ok || !r.substitutes?.length) { this.toast('ไม่มีข้อมูล','warn'); this.showLoading(false); return; }
-      const activeSubs = r.substitutes.filter(s => s.status !== 'Cancelled');
+      const activeSubs = r.substitutes.filter(s => s.status !== 'Cancelled' && s.subId && s.subId !== 'ไม่จัดสอนแทน');
+      if (!activeSubs.length) { this.toast('วันนี้ไม่มีคาบที่จัดครูสอนแทน','warn'); this.showLoading(false); return; }
       const dayName = this.getDayName(date);
       const pal     = DAY_PALETTES[dayName] || DEFAULT_PAL;
       const htmlStr = this.buildExportHtml(date, activeSubs, pal);
@@ -2275,6 +2317,7 @@ const App = {
         const cancelled = s.status === 'Cancelled';
         const noSub = !s.subId || s.subId === 'ไม่จัดสอนแทน';
         const subCell = (isSwapRowX(s) && !cancelled) ? `<b style="color:#059669;">🔄 ${s.subName}</b> <span class="badge badge-info">แลกคาบ</span>` : cancelled ? `<span style="color:var(--text-3);text-decoration:line-through;">${s.subName||'—'}</span>`
+          : (noSub && s.leaveOnly) ? `<span style="color:var(--text-3);">บันทึกการลา · ไม่จัดสอนแทน</span>`
           : noSub ? `<span style="color:var(--text-3);">ไม่จัดสอนแทน</span>`
           : `<b style="color:#059669;">${s.subName}</b>`;
         const badge = cancelled
@@ -2283,12 +2326,12 @@ const App = {
           : s.acknowledged ? `<span class="badge badge-ack">✔ รับทราบ</span>`
           : `<span class="badge badge-pending">⏳ รอ</span>`;
         const isSwapRow = /^แลกคาบ/.test(s.reason||'');
-        const editBtn = (!cancelled && !isSwapRow)
+        const editBtn = (!cancelled && !isSwapRow && !s.leaveOnly)
           ? `<button onclick="App.quickEditSub(${s.rowId},'${s.subId||''}','${g.absentName}',${s.period},'${s.subjectCode||''}','${s.room||''}','${g.absentId}','${s.building||''}')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 9px;" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`
           : '';
         const rowStyle = cancelled ? ' style="opacity:.45;"' : '';
         html += `<tr${rowStyle}>
-          <td><div class="period-circle">${s.period}</div></td>
+          <td>${s.period ? `<div class="period-circle">${s.period}</div>` : '<span class="badge badge-nosub">ทั้งวัน</span>'}</td>
           <td>${s.subjectCode||'—'}</td>
           <td>${s.room||'—'}</td>
           <td style="font-size:12px;">${s.classroom||'—'}</td>
@@ -2402,8 +2445,8 @@ const App = {
     const date = document.getElementById('assign-date').value;
     const r = await this.api({ action:'getSubstitutes', date });
     if (!r.ok || !r.substitutes?.length) { this.toast('ไม่มีข้อมูลสำหรับบันทึกภาพ','warn'); return; }
-    const subs = r.substitutes.filter(s => s.status !== 'Cancelled');
-    if (!subs.length) { this.toast('ไม่มีข้อมูลที่ active','warn'); return; }
+    const subs = r.substitutes.filter(s => s.status !== 'Cancelled' && s.subId && s.subId !== 'ไม่จัดสอนแทน');
+    if (!subs.length) { this.toast('ยังไม่มีคาบที่จัดครูสอนแทน','warn'); return; }
     const dayName = this.getDayName(date);
     const pal     = DAY_PALETTES[dayName] || DEFAULT_PAL;
     const htmlStr = this.buildExportHtml(date, subs, pal);
@@ -2450,7 +2493,7 @@ const App = {
     } else {
       schedHtml = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>คาบ</th><th>รหัสวิชา</th><th>ระดับชั้น</th><th>ห้อง</th><th>ครูสอนแทน</th></tr></thead><tbody>`;
       b.schedule.forEach(p => {
-        schedHtml += `<tr><td><div class="period-circle">${p.period}</div></td><td style="font-weight:600;">${p.subjectCode||'—'}</td><td>${p.room||'—'}</td><td>${p.roomNum||'—'}</td><td style="min-width:220px;">${this.buildSubSelect(id, p.period, b.assignments[p.period]||'')}</td></tr>`;
+        schedHtml += `<tr><td><div class="period-circle">${p.period}</div></td><td style="font-weight:600;">${p.subjectCode||'—'}</td><td>${p.room||'—'}</td><td>${p.roomNum||'—'}</td><td style="min-width:220px;">${p.swapped ? `<span class="badge badge-info">แลกคาบแล้ว</span> <span style="font-size:12.5px;color:var(--text-2);">${this.esc(p.swapped)}</span>` : b.leaveOnly ? '<span class="badge badge-nosub">ไม่จัดสอนแทน · บันทึกการลา</span>' : this.buildSubSelect(id, p.period, b.assignments[p.period]||'')}</td></tr>`;
       });
       schedHtml += `</tbody></table></div>`;
     }
@@ -2469,6 +2512,7 @@ const App = {
             <option value="">-- เลือกสาเหตุ --</option>${rOpts}
           </select></div>
       </div>
+      <label class="lx-leave"><input type="checkbox" ${b.leaveOnly?'checked':''} onchange="App.setLeaveOnly(${id},this.checked)"><span>บันทึกการลาอย่างเดียว ไม่ต้องจัดสอนแทน<small>เช่น ครูแลกคาบไว้ครบแล้ว — จะไม่แสดงในตารางสอนแทนรายวันและรูปประกาศ</small></span></label>
       <div id="block-sched-${id}">${schedHtml}</div>
     </div>`;
   },
@@ -2715,11 +2759,18 @@ const App = {
       if (!b.teacherId) { warnings.push({ type:'error', msg:'ยังไม่ได้เลือกครูที่ไม่อยู่' }); hasError = true; return; }
       if (!b.reason)    { warnings.push({ type:'error', msg:`ยังไม่ได้เลือกสาเหตุสำหรับ ${b.teacherId}` }); hasError = true; return; }
       if (b.schedule === null) { warnings.push({ type:'warn', msg:`ยังไม่ได้โหลดคาบสอนของ ${b.teacherId}` }); return; }
-      b.schedule.forEach(p => {
+      const live = b.schedule.filter(p => !p.swapped);
+      if (b.leaveOnly) {
+        (live.length ? live : [{ period:0, subjectCode:'', room:'', roomNum:'', building:'' }]).forEach(p => {
+          allAssignments.push({ absentId:b.teacherId, reason:b.reason, period:p.period, subjectCode:p.subjectCode, room:p.room, roomNum:p.roomNum, building:p.building, subId:'ไม่จัดสอนแทน', leaveOnly:true });
+        });
+        return;
+      }
+      live.forEach(p => {
         allAssignments.push({ absentId:b.teacherId, reason:b.reason, period:p.period, subjectCode:p.subjectCode, room:p.room, roomNum:p.roomNum, building:p.building, subId:b.assignments[p.period]||'ไม่จัดสอนแทน' });
       });
     });
-    if (allAssignments.length === 0 && !hasError) { this.toast('ไม่มีคาบสอนที่ต้องจัดสอนแทน','warn'); return; }
+    if (allAssignments.length === 0 && !hasError) { this.toast('ไม่มีคาบที่ต้องจัดสอนแทน — ถ้าครูแลกคาบไว้ครบแล้วและต้องการบันทึกการลา ให้ติ๊ก "บันทึกการลาอย่างเดียว"','warn'); return; }
     // Load warnings
     const subDayPeriods = {};
     allAssignments.forEach(a => {
@@ -3279,7 +3330,7 @@ const App = {
       await this.loadTeacherCache();
       const sel = document.getElementById('swap-teacher');
       if (sel && !sel.options.length) {
-        sel.innerHTML = this.state.teachers.map(t => `<option value="${this.esc(t.id)}">${this.esc(t.fullName)} (${this.esc(t.id)})</option>`).join('');
+        sel.innerHTML = this.state.teachers.filter(t => !this.state.department || !t.department || t.department === this.state.department || t.id === this.state.uid).map(t => `<option value="${this.esc(t.id)}">${this.esc(t.fullName)} (${this.esc(t.id)})</option>`).join('');
         if (this.state.teachers.some(t => t.id === this.state.uid)) sel.value = this.state.uid;
       }
     }
@@ -4062,7 +4113,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
       const dateTh = `${d.getDate()} ${months[d.getMonth()]} พ.ศ. ${d.getFullYear() + 543}`;
       const s = this.state.settings || {};
-      const rd = App.reportDept ? App.reportDept() : '', dept = rd ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(rd) : (s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
+      subs = (subs || []).filter(x => x.subId && x.subId !== 'ไม่จัดสอนแทน');   // แสดงเฉพาะคาบที่มีครูสอนแทน
+      const dsets = [...new Set(subs.map(x => x.absentDept).filter(Boolean))];
+      const dept = dsets.length === 1 ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(dsets[0]) : dsets.length > 1 ? 'ทุกกลุ่มสาระ' : (s.departmentName || ''), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
       const groups = {};
       subs.forEach(x => { const k = x.absentId + '||' + x.reason; (groups[k] = groups[k] || { absentId:x.absentId, absentName:x.absentName, reason:x.reason, rows:[] }).rows.push(x); });
       const arr = Object.values(groups).sort((a, b) => (a.absentId || '').localeCompare(b.absentId || '', 'th', { numeric:true }));
@@ -4119,30 +4172,39 @@ window.addEventListener('DOMContentLoaded', () => {
       const s = this.state.settings, { ft, fv } = this._overallFilter || {};
       const periodLabel = this.filterLabel(ft, fv), dateRange = this.filterDateRange(ft, fv);
       const subMap = {}; (data.subStats || []).forEach(t => { subMap[t.id] = t.count; });
-      const all = (this.state.teachers || []).map(t => ({ id:t.id, fullName:t.fullName, count:subMap[t.id] || 0 })).sort((a, b) => a.id.localeCompare(b.id, 'th', { numeric:true }));
+      const rd0 = App.reportDept ? App.reportDept() : '';
+      const wide = !rd0 && App.isSchoolAdmin && App.isSchoolAdmin();   // แอดมินโรงเรียนไม่ได้เลือกกลุ่มสาระ → สรุปแยกกลุ่มสาระ
+      const all = (this.state.teachers || []).filter(t => !rd0 || t.department === rd0).map(t => ({ id:t.id, fullName:t.fullName, count:subMap[t.id] || 0 })).sort((a, b) => a.id.localeCompare(b.id, 'th', { numeric:true }));
       const total = all.reduce((x, t) => x + t.count, 0), pad = n => String(n).padStart(2, '0'), n = new Date();
       const nowTH = `${pad(n.getDate())}/${pad(n.getMonth() + 1)}/${n.getFullYear() + 543} ${pad(n.getHours())}:${pad(n.getMinutes())}`;
-      const rd = App.reportDept ? App.reportDept() : '', dept = rd ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(rd) : (s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
+      const rd = rd0, dept = rd ? 'กลุ่มสาระการเรียนรู้' + App.deptLabel(rd) : wide ? 'ทุกกลุ่มสาระ' : (s.departmentName || 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'), school = s.schoolName || 'โรงเรียนบุญวัฒนา';
       const bd = `border:1px solid ${C.line};`;
+      const bdep = (data.byDept || []).slice().sort((a, b) => String(a.dept).localeCompare(String(b.dept), 'th', { numeric:true }));
+      const tTaught = bdep.reduce((x, d) => x + (d.taught || 0), 0), tNeed = bdep.reduce((x, d) => x + (d.needSub || 0), 0), tCov = bdep.reduce((x, d) => x + (d.covered || 0), 0);
+      const cell = (v, al, extra) => `<td style="${bd}padding:2px 6px;text-align:${al || 'center'};${extra || ''}">${v}</td>`;
+      const rowsWide = bdep.map((d, i) => `<tr style="background:${i % 2 ? C.paper2 : '#fffefa'};">${cell(i + 1)}${cell(esc(App.deptLabel(d.dept)), 'left', 'font-weight:700;padding-left:10px;')}${cell(d.needSub || 0)}${cell(d.covered || 0)}${cell(d.taught || 0, 'center', 'font-weight:700;')}${cell(tTaught ? ((d.taught || 0) / tTaught * 100).toFixed(2) + '%' : '0.00%')}</tr>`).join('');
       const rows = all.map((t, i) => `<tr style="background:${i % 2 ? C.paper2 : '#fffefa'};"><td style="${bd}padding:2px 4px;text-align:center;">${i + 1}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${esc(t.id)}</td><td style="${bd}padding:2px 10px;font-weight:700;">${esc(t.fullName)}</td><td style="${bd}padding:2px 4px;text-align:center;font-weight:700;">${t.count > 0 ? t.count : ''}</td><td style="${bd}padding:2px 4px;text-align:center;">${total > 0 ? (t.count / total * 100).toFixed(2) + '%' : '0.00%'}</td></tr>`).join('');
       const th = (t, w, al) => `<th style="border:1px solid ${C.n2};padding:3px 6px 5px;color:${C.gh};font-size:21px;font-weight:700;text-align:${al || 'center'};${w ? 'width:' + w + 'px;' : ''}">${t}</th>`;
       const page = `<div style="font-family:${F};background:#fffefa;width:794px;box-sizing:border-box;color:${C.ink};font-size:20px;">
         <div style="background-color:${C.n0};background-image:${lattice},radial-gradient(420px 220px at 92% 0%,rgba(214,185,126,.28),transparent 70%),linear-gradient(180deg,${C.n1},${C.n0});background-size:56px 56px,56px 56px,auto,auto,auto;padding:26px 34px 20px;text-align:center;border-bottom:4px solid ${C.g};">
           <div style="font-size:19px;letter-spacing:.38em;color:${C.g};font-weight:700;">${esc(school)}</div>
-          <div style="font-size:42px;font-weight:700;color:${C.gh};line-height:1.15;margin-top:2px;">สถิติจำนวนคาบสอนแทนรายบุคคล</div>
+          <div style="font-size:42px;font-weight:700;color:${C.gh};line-height:1.15;margin-top:2px;">${wide ? 'สถิติการสอนแทนแยกตามกลุ่มสาระ' : 'สถิติจำนวนคาบสอนแทนรายบุคคล'}</div>
           <div style="font-size:24px;font-weight:700;color:#fff;margin-top:2px;">${esc(dept)}</div>
           <div style="font-size:22px;font-weight:700;color:${C.g};margin-top:2px;">${esc(periodLabel)}</div>
         </div>
         <div style="padding:14px 34px 22px;">
           <div style="display:flex;justify-content:space-between;font-size:18px;color:${C.ink2};font-weight:700;margin-bottom:8px;"><span>${esc(dateRange)}</span><span>สร้างเมื่อ ${nowTH}</span></div>
           <table style="width:100%;border-collapse:collapse;font-size:20px;line-height:1.15;">
-            <thead><tr style="background:${C.n1};">${th('ลำดับ', 56)}${th('รหัสครู', 76)}${th('ชื่อ-สกุล', 0, 'left')}${th('รวมจำนวนคาบ', 104)}${th('ร้อยละ', 80)}</tr></thead>
+            ${wide ? `<thead><tr style="background:${C.n1};">${th('ลำดับ', 56)}${th('กลุ่มสาระ', 0, 'left')}${th('คาบที่ต้องจัดแทน', 120)}${th('จัดได้', 80)}${th('ครูในกลุ่มไปสอนแทน', 130)}${th('ร้อยละ', 80)}</tr></thead>
+            <tbody>${rowsWide}</tbody>
+            <tfoot><tr style="background:linear-gradient(90deg,${C.gh},${C.g});font-weight:700;color:${C.n0};"><td colspan="2" style="${bd}padding:3px 12px;text-align:right;font-size:22px;">รวม</td>${[tNeed, tCov, tTaught].map(v => `<td style="${bd}padding:3px;text-align:center;font-size:22px;">${v}</td>`).join('')}<td style="${bd}padding:3px;text-align:center;font-size:22px;">100.00%</td></tr></tfoot>`
+            : `<thead><tr style="background:${C.n1};">${th('ลำดับ', 56)}${th('รหัสครู', 76)}${th('ชื่อ-สกุล', 0, 'left')}${th('รวมจำนวนคาบ', 104)}${th('ร้อยละ', 80)}</tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr style="background:linear-gradient(90deg,${C.gh},${C.g});font-weight:700;color:${C.n0};"><td colspan="3" style="${bd}padding:3px 12px;text-align:right;font-size:22px;">รวม</td><td style="${bd}padding:3px;text-align:center;font-size:22px;">${total}</td><td style="${bd}padding:3px;text-align:center;font-size:22px;">100.00%</td></tr></tfoot>
+            <tfoot><tr style="background:linear-gradient(90deg,${C.gh},${C.g});font-weight:700;color:${C.n0};"><td colspan="3" style="${bd}padding:3px 12px;text-align:right;font-size:22px;">รวม</td><td style="${bd}padding:3px;text-align:center;font-size:22px;">${total}</td><td style="${bd}padding:3px;text-align:center;font-size:22px;">100.00%</td></tr></tfoot>`}
           </table>
-          <p style="font-size:17px;color:${C.ink2};margin:8px 0 0;font-weight:700;">หมายเหตุ: ร้อยละคำนวณจากจำนวนคาบสอนแทนของครูแต่ละคน เทียบกับผลรวมทั้งหมดในช่วงวันที่กำหนด</p>
+          <p style="font-size:17px;color:${C.ink2};margin:8px 0 0;font-weight:700;">หมายเหตุ: ${wide ? 'ร้อยละคำนวณจากจำนวนคาบที่ครูในแต่ละกลุ่มสาระไปสอนแทน เทียบกับผลรวมทั้งโรงเรียน (ไม่นับการแลกคาบ)' : 'ร้อยละคำนวณจากจำนวนคาบสอนแทนของครูแต่ละคน เทียบกับผลรวมทั้งหมดในช่วงวันที่กำหนด (ไม่นับการแลกคาบ)'}</p>
           <div style="margin-top:26px;display:flex;justify-content:space-between;font-size:21px;font-weight:700;">
-            <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc((App.headFor && App.headFor(rd)) || (rd ? '..............................' : (s.headTeacher || 'นายนพพร ฉลองกลาง')))})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">หัวหน้า${esc(dept)}</p></div>
+            <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc(wide ? '..............................' : (App.headFor && App.headFor(rd)) || (rd ? '..............................' : (s.headTeacher || 'นายนพพร ฉลองกลาง')))})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">${wide ? 'ผู้รายงาน' : 'หัวหน้า' + esc(dept)}</p></div>
             <div style="min-width:240px;"><p style="margin:0 0 30px;">ลงชื่อ .....................................................</p><p style="margin:0;text-align:center;">(${esc(s.headSchool || 'นายวิเชียร ทองคลี่')})</p><p style="margin:0;font-size:18px;text-align:center;color:${C.ink2};">ผู้อำนวยการ${esc(school)}</p></div>
           </div>
         </div></div>`;
@@ -4232,7 +4294,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.3 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.8 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
@@ -4639,7 +4701,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('panel-admin-settings')) {
       const host = document.getElementById('panel-admin-audit'); if (!host) return;
       const p = document.createElement('div'); p.id = 'panel-admin-settings'; p.className = 'panel';
-      p.innerHTML = `<div class="card"><div class="card-header"><h3 style="font-size:14.5px;font-weight:700;margin:0;">⚙️ หัวหน้ากลุ่มสาระ</h3>
+      p.innerHTML = `<div class="card"><div class="card-header"><h3 style="font-size:14.5px;font-weight:700;margin:0;">⚙️ ผู้ลงนามในรายงาน</h3>
         <p class="ss-note" style="margin:6px 0 0;">ชื่อที่กรอกจะแสดงเป็นผู้ลงนามในรายงานสถิติของกลุ่มสาระนั้น และในข้อความแจ้งหัวหน้ากลุ่มสาระ</p></div>
         <div id="heads-body" style="padding:14px 18px;"></div></div>`;
       host.parentNode.insertBefore(p, host.nextSibling);
@@ -4662,17 +4724,130 @@ window.addEventListener('DOMContentLoaded', () => {
     const r = await this.api({ action: 'getHeads' });
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${esc(r.err)}</p></div>`; return; }
     this._heads = r.departments;
-    body.innerHTML = `<div style="display:grid;gap:10px;max-width:640px;">` + r.departments.map((d, i) =>
+    const dir = r.director !== undefined ? `<div><label class="form-label">ผู้อำนวยการโรงเรียน (ใช้ลงนามในรายงาน)</label><input class="form-input" id="dir-in" value="${esc(r.director)}" maxlength="120" placeholder="เช่น นายสมชาย ใจดี"></div><div style="height:1px;background:var(--line);margin:6px 0"></div>` : '';
+    body.innerHTML = `<div style="display:grid;gap:10px;max-width:640px;">` + dir + r.departments.map((d, i) =>
       `<div><label class="form-label">${esc(dl(d.department))}</label><input class="form-input head-in" data-i="${i}" value="${esc(d.head)}" maxlength="120" placeholder="เช่น นายสมชาย ใจดี"></div>`).join('') +
       `</div><div style="margin-top:14px;"><button class="btn btn-primary" onclick="App.saveHeads()">💾 บันทึก</button></div>`;
   };
   App.saveHeads = async function () {
     const o = {}; document.querySelectorAll('.head-in').forEach(el => { o[this._heads[+el.dataset.i].department] = el.value.trim(); });
+    const di = document.getElementById('dir-in'); if (di) o.__director__ = di.value.trim();
     const r = await this.api({ action: 'saveHeads', heads: JSON.stringify(o) });
     if (!r.ok) { this.toast(r.err || 'บันทึกไม่สำเร็จ', 'error'); return; }
     try { const s = await this.api({ action: 'getSettings' }); if (s.ok) { this.state.settings = s.settings; } } catch (e) {}
     this.toast(r.changed ? 'บันทึกแล้ว ' + r.changed + ' รายการ' : 'ไม่มีการเปลี่ยนแปลง', 'success');
   };
+})();
+
+/* ── จัดสอนแทนอัตโนมัติ + บันทึกการลาอย่างเดียว ── */
+(function () {
+  const NO = 'ไม่จัดสอนแทน';
+  App.setLeaveOnly = function (id, on) {
+    const b = this.state.absentBlocks.find(x => x.id === id); if (!b) return;
+    b.leaveOnly = !!on; this.renderBlock(id);
+  };
+
+  /* เกณฑ์เลือกครู (ค่ายิ่งน้อยยิ่งเหมาะ)
+     ตัดทิ้ง: ไม่อยู่วันนี้ · มีคาบสอน/คาบกิจกรรม/ประชุมในคาบนั้น · ถูกเลือกไปแล้วในคาบเดียวกัน · คนละกลุ่มสาระ
+     คะแนน: ภาระวันนี้ ×10 · สอนแทนสะสมภาคเรียนนี้ ×3 · ทำให้สอนติดกัน ≥3 คาบ +15 · ต้องย้ายอาคาร +4 · ภาระถึงเกณฑ์เตือน +20 */
+  App.autoAssign = async function () {
+    const date = document.getElementById('assign-date').value;
+    if (!date) { this.toast('กรุณาเลือกวันที่', 'warn'); return; }
+    const blocks = this.state.absentBlocks.filter(b => b.teacherId);
+    if (!blocks.length) { this.toast('เลือกครูที่ไม่อยู่ก่อน', 'warn'); return; }
+    if (blocks.some(b => b.schedule === null)) await this.loadAllSchedules();
+    if (!Object.keys(this.state.dayLoad).length) { const r = await this.api({ action: 'getDayLoad', date }); if (r.ok) (r.teachers || []).forEach(t => { this.state.dayLoad[t.id] = t; }); }
+    const s = this.state.settings || {}, warnLoad = s.warnDailyLoad || 5;
+    const absent = new Set(blocks.map(b => b.teacherId.toUpperCase()));
+    (this.state.absentTodayIds || []).forEach(x => absent.add(String(x).toUpperCase()));
+    const load = this.state.dayLoad;
+    /* คาบที่เลือกไว้แล้วในฟอร์ม (รวมที่แอดมินเลือกเอง) */
+    const picked = {};   // id -> Set(period)
+    const mark = (id, p) => (picked[id] = picked[id] || new Set()).add(+p);
+    blocks.forEach(b => Object.entries(b.assignments || {}).forEach(([p, v]) => { if (v && v !== NO) mark(v, p); }));
+    /* งานที่ต้องเติม: ทุกคาบที่ยังเป็น "ไม่จัดสอนแทน" (ค่าเริ่มต้น) — คาบที่เลือกครูไว้แล้วไม่แตะ */
+    const jobs = [];
+    blocks.forEach(b => { if (b.leaveOnly) return; (b.schedule || []).forEach(p => { if (!p.swapped && (!b.assignments[p.period] || b.assignments[p.period] === NO)) jobs.push({ b, p }); }); });
+    if (!jobs.length) { this.toast('ทุกคาบมีครูสอนแทนแล้ว', 'info'); return; }
+    const busy = (id, per) => { const t = load[id]; return (t && t.allPeriods.includes(per)) || (picked[id] && picked[id].has(per)); };
+    const cands = (b, per) => this.sameDeptPool(b.teacherId).filter(t => !absent.has(t.id.toUpperCase()) && !(load[t.id] && load[t.id].absentToday) && !busy(t.id, per));
+    jobs.forEach(j => { j.n = cands(j.b, j.p.period).length; });
+    jobs.sort((a, b) => a.n - b.n || a.p.period - b.p.period);   // คาบที่หาคนยากที่สุดก่อน
+    let ok = 0, miss = 0; const why = {};
+    jobs.forEach(({ b, p }) => {
+      const per = p.period;
+      let best = null;
+      cands(b, per).forEach(t => {
+        const td = load[t.id] || { totalDayLoad: 0, semCount: 0, allPeriods: [], periodBuildings: {} };
+        const extra = picked[t.id] ? picked[t.id].size : 0;
+        const dayLoad = td.totalDayLoad + extra;
+        const occ = new Set([...(td.allPeriods || []), ...(picked[t.id] || [])]); occ.add(per);
+        let run = 1; for (let k = per - 1; occ.has(k); k--) run++; for (let k = per + 1; occ.has(k); k++) run++;
+        const bAdj = (td.periodBuildings || {})[per - 1] || (td.periodBuildings || {})[per + 1] || '';
+        const moveB = !!(p.building && bAdj && bAdj !== p.building);
+        const cost = dayLoad * 10 + (td.semCount || 0) * 3 + (run >= 3 ? 15 : 0) + (moveB ? 4 : 0) + (dayLoad + 1 >= warnLoad ? 20 : 0);
+        if (!best || cost < best.cost || (cost === best.cost && t.id.localeCompare(best.t.id, 'th', { numeric: true }) < 0))
+          best = { t, cost, dayLoad, sem: td.semCount || 0, run, moveB };
+      });
+      if (!best) { miss++; return; }
+      b.assignments[per] = best.t.id; mark(best.t.id, per); ok++;
+      why[b.id + '-' + per] = `ว่างคาบนี้ · วันนี้สอน ${best.dayLoad} คาบ · สอนแทนภาคเรียนนี้ ${best.sem} คาบ` + (best.run >= 3 ? ' · ติดกัน ' + best.run + ' คาบ' : '') + (best.moveB ? ' · ต้องย้ายอาคาร' : '');
+    });
+    blocks.forEach(b => this.renderBlock(b.id));
+    Object.entries(why).forEach(([k, txt]) => { const el = document.getElementById('sub-warn-' + k); if (el) el.innerHTML = `<span class="lx-auto-why">${App.icon ? App.icon('spark') : ''} ${txt}</span>`; });
+    this.toast(miss ? `จัดให้ ${ok} คาบ · หาครูว่างไม่ได้ ${miss} คาบ (เลือกเองหรือปล่อยว่าง)` : `จัดให้ครบ ${ok} คาบ ตรวจแล้วกด "วิเคราะห์และบันทึก"`, miss ? 'warn' : 'success');
+  };
+
+  /* ── ครูที่แนะนำรายคาบ (คะแนน + เหตุผล) ใต้ช่องเลือกครูสอนแทน ── */
+  App.rankFor = function (b, p) {
+    const load = this.state.dayLoad || {}; if (!Object.keys(load).length) return [];
+    const s = this.state.settings || {}, warnLoad = s.warnDailyLoad || 5, per = p.period;
+    const blocks = this.state.absentBlocks.filter(x => x.teacherId);
+    const absent = new Set(blocks.map(x => x.teacherId.toUpperCase()));
+    (this.state.absentTodayIds || []).forEach(x => absent.add(String(x).toUpperCase()));
+    const picked = {};
+    blocks.forEach(x => Object.entries(x.assignments || {}).forEach(([pp, v]) => { if (v && v !== NO && !(x.id === b.id && +pp === per)) (picked[v] = picked[v] || new Set()).add(+pp); }));
+    return this.sameDeptPool(b.teacherId).filter(t => !absent.has(t.id.toUpperCase()) && !(load[t.id] && load[t.id].absentToday)
+        && !((load[t.id] && load[t.id].allPeriods.includes(per)) || (picked[t.id] && picked[t.id].has(per))))
+      .map(t => {
+        const td = load[t.id] || { totalDayLoad: 0, semCount: 0, allPeriods: [], periodBuildings: {} };
+        const dayLoad = td.totalDayLoad + (picked[t.id] ? picked[t.id].size : 0);
+        const occ = new Set([...(td.allPeriods || []), ...(picked[t.id] || [])]); occ.add(per);
+        let run = 1; for (let k = per - 1; occ.has(k); k--) run++; for (let k = per + 1; occ.has(k); k++) run++;
+        const bAdj = (td.periodBuildings || {})[per - 1] || (td.periodBuildings || {})[per + 1] || '';
+        const moveB = !!(p.building && bAdj && bAdj !== p.building), sameB = !!(p.building && bAdj && bAdj === p.building);
+        const heavy = dayLoad + 1 >= warnLoad;
+        const cost = dayLoad * 10 + (td.semCount || 0) * 3 + (run >= 3 ? 15 : 0) + (moveB ? 4 : 0) + (heavy ? 20 : 0);
+        const reasons = [[true, 'ว่างคาบนี้'], [!heavy, `วันนี้สอน ${dayLoad} → ${dayLoad + 1} คาบ`], [(td.semCount || 0) < 3, `สอนแทนภาคเรียนนี้ ${td.semCount || 0} คาบ`]];
+        if (run >= 3) reasons.push([false, `สอนติดกัน ${run} คาบ`]);
+        if (moveB) reasons.push([false, 'ต้องย้ายอาคาร']); else if (sameB) reasons.push([true, 'อาคารเดียวกับคาบใกล้เคียง']);
+        return { t, cost, score: Math.max(0, Math.min(100, Math.round(100 - cost * 0.5))), reasons };
+      }).sort((x, y) => x.cost - y.cost || x.t.id.localeCompare(y.t.id, 'th', { numeric: true }));
+  };
+  const short = n => String(n || '').replace(/^(นางสาว|นาย|นาง|ว่าที่ ร\.ต\.)\s*/, '');
+  App.suggHtml = function (bid, per) {
+    const b = this.state.absentBlocks.find(x => x.id === bid); if (!b || b.leaveOnly) return '';
+    const p = (b.schedule || []).find(x => x.period === per); if (!p || p.swapped) return '';
+    const list = this.rankFor(b, p).slice(0, 3); if (!list.length) return '<span class="lx-sg-none">ไม่มีครูในกลุ่มสาระที่ว่างคาบนี้</span>';
+    const cur = b.assignments[per];
+    const medal = ['①', '②', '③'];
+    return '<span class="lx-sg-lbl">แนะนำ</span>' + list.map((x, i) => {
+      const tip = x.reasons.map(r => (r[0] ? '✓ ' : '⚠ ') + r[1]).join('\n');
+      return `<button type="button" class="lx-sg${cur === x.t.id ? ' on' : ''}${x.score >= 65 ? ' good' : x.score >= 45 ? ' mid' : ' low'}" title="${this.esc(tip)}" onclick="App.pickSugg(${bid},${per},'${this.esc(x.t.id)}')"><i>${medal[i]}</i>${this.esc(short(x.t.fullName))}<b>${x.score}</b></button>`;
+    }).join('');
+  };
+  App.refreshSuggs = function () { document.querySelectorAll('.lx-sugg[data-b]').forEach(el => { el.innerHTML = this.suggHtml(+el.dataset.b, +el.dataset.p); }); };
+  App.pickSugg = function (bid, per, id) {
+    const sel = document.querySelector(`#absent-block-${bid} select[onchange*="onSubChange(${bid},${per},"]`);
+    if (sel) sel.value = id;
+    this.onSubChange(bid, per, id);
+  };
+  const bss0 = App.buildSubSelect;
+  App.buildSubSelect = function (blockId, period, curVal) {
+    return bss0.apply(this, arguments).replace(/<\/div>\s*$/, `<div class="lx-sugg" data-b="${blockId}" data-p="${period}">${this.suggHtml(blockId, period)}</div></div>`);
+  };
+  const osc0 = App.onSubChange;
+  App.onSubChange = function () { const r = osc0.apply(this, arguments); this.refreshSuggs(); return r; };
 })();
 
 /* ═══ UI: ธีมสว่าง/มืด · เมนูตามบทบาท · morph · แถบโหลด · ไอคอนเส้น ═══ */
@@ -4997,6 +5172,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ───────── เริ่มทำงาน ───────── */
   function boot() {
     mountThemeBtn(); startIcons(); applyRoles();
+    /* ป๊อปอัปที่อยู่ในเนื้อหาหลัก → ย้ายไปไว้ระดับบนสุด ให้คลุมทั้งจอรวมเมนูด้านข้าง */
+    ['teacher-modal', 'reset-pwd-modal'].forEach(id => { const m = document.getElementById(id); if (m && m.parentNode !== document.body) document.body.appendChild(m); });
     const hd = document.getElementById('home-date'); if (hd) hd.addEventListener('change', () => hd.value && App.loadHome(hd.value));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
@@ -5005,7 +5182,7 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 <!-- Session Timeout Warning Modal -->
 <div id="session-warn-modal" style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:360px;width:calc(100%-32px);text-align:center;box-shadow:0 20px 60px rgba(30,27,75,.25);">
+  <div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:360px;width:calc(100% - 32px);text-align:center;box-shadow:0 20px 60px rgba(30,27,75,.25);">
     <div style="width:56px;height:56px;background:#fef3c7;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px;">⏱</div>
     <h3 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 8px;">เซสชันกำลังจะหมดอายุ</h3>
     <p style="font-size:14px;color:#6b7280;margin:0 0 6px;">ไม่พบการใช้งานสักครู่</p>
