@@ -2281,7 +2281,8 @@ const App = {
     if (!date || !el) return;
     el.style.display = 'none'; el.innerHTML = '';
     const r = await this.api({ action:'getSubstitutes', date });
-    if (!r.ok || !(r.substitutes?.length)) return;
+    if (!r.ok) { el.style.display = ''; el.innerHTML = `<div class="card" style="padding:14px 18px;color:var(--text-2);">โหลดรายการที่บันทึกไว้แล้วของวันนี้ไม่สำเร็จ (${this.esc(r.err||'ไม่ทราบสาเหตุ')}) <button class="btn btn-outline btn-sm" onclick="App.loadAssignExisting()">ลองใหม่</button></div>`; return; }
+    if (!(r.substitutes?.length)) return;
     const subs = r.substitutes;
     // จัดกลุ่มตาม absentId
     const groups = {};
@@ -4303,7 +4304,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.0 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.1 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
