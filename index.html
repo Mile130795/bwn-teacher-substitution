@@ -2146,7 +2146,7 @@ const App = {
     this.showLoading(true);
     const cfg = this.state.settings;
     const fv  = `${cfg.currentSemester||'1'}_${cfg.currentYear||(new Date().getFullYear()+543)}`;
-    const r   = await this.api({ action:'getMySubs', teacherId:this.state.uid, ft:'semester', fv });
+    const r   = await this.api({ action:'getMySubs', teacherId:this.state.uid, ft:'semester', fv, incSwap:1 });
     this.showLoading(false);
     const body = document.getElementById('user-ack-body');
     if (!r.ok) { body.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>${r.err}</p></div>`; return; }
@@ -2280,7 +2280,7 @@ const App = {
     const el = document.getElementById('assign-existing');
     if (!date || !el) return;
     el.style.display = 'none'; el.innerHTML = '';
-    const r = await this.api({ action:'getSubstitutes', date });
+    const r = await this.api({ action:'getSubstitutes', date, fresh:1 });
     if (!r.ok) { el.style.display = ''; el.innerHTML = `<div class="card" style="padding:14px 18px;color:var(--text-2);">โหลดรายการที่บันทึกไว้แล้วของวันนี้ไม่สำเร็จ (${this.esc(r.err||'ไม่ทราบสาเหตุ')}) <button class="btn btn-outline btn-sm" onclick="App.loadAssignExisting()">ลองใหม่</button></div>`; return; }
     if (!(r.substitutes?.length)) return;
     const subs = r.substitutes;
@@ -2871,7 +2871,7 @@ const App = {
     const { ft, fv } = this.getFilter('as');
     if (!fv) { this.toast('กรุณาเลือกช่วงเวลา','warn'); return; }
     this.showLoading(true);
-    const r = await this.api({ action:'getMySubs', teacherId:this.state.uid, ft, fv });
+    const r = await this.api({ action:'getMySubs', teacherId:this.state.uid, ft, fv, incSwap:1 });
     this.showLoading(false);
     if (!r.ok) { this.toast(r.err,'error'); return; }
     const subs = r.substitutes||[]; const acked = subs.filter(s => s.acknowledged).length;
@@ -4020,7 +4020,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ตัวเลขสรุป — โหลดเบื้องหลัง
     const ym = today.slice(0, 7), semFv = `${s.currentSemester || '1'}_${s.currentYear || ''}`;
     const set = (id, v) => { const n = document.getElementById(id); if (n) { n.textContent = v; n.classList.add('in'); } };
-    this.api({ action: 'getMySubs', teacherId: st.uid, ft: 'semester', fv: semFv }).then(r => set('wl-n1', r.ok ? (r.substitutes || []).filter(x => !x.acknowledged).length : '–'));
+    this.api({ action: 'getMySubs', teacherId: st.uid, ft: 'semester', fv: semFv, incSwap: 1 }).then(r => set('wl-n1', r.ok ? (r.substitutes || []).filter(x => !x.acknowledged).length : '–'));
     this.api({ action: 'listSwaps', scope: 'mine' }).then(r => set('wl-n2', r.ok ? (r.waitingForMe || 0) : '–'));
     if (isAdmin) this.api({ action: 'listSwaps', scope: 'pending' }).then(r => set('wl-n3', r.ok ? (r.count || 0) : '–'));
     else this.api({ action: 'getMySubs', teacherId: st.uid, ft: 'month', fv: ym }).then(r => set('wl-n3', r.ok ? (r.substitutes || []).length : '–'));
@@ -4304,7 +4304,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.1 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.2 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
@@ -5081,7 +5081,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const st = App.state; if (!st || !st.token) { ['nav-ack-badge', 'nav-approve-badge'].forEach(i => setBadge(i, 0)); return; }
     try {
       const s = st.settings || {}, fv = `${s.currentSemester || '1'}_${s.currentYear || (new Date().getFullYear() + 543)}`;
-      const r = await App.api({ action: 'getMySubs', teacherId: st.uid, ft: 'semester', fv });
+      const r = await App.api({ action: 'getMySubs', teacherId: st.uid, ft: 'semester', fv, incSwap: 1 });
       if (r && r.ok) setBadge('nav-ack-badge', (r.substitutes || []).filter(x => x.status !== 'Cancelled' && !x.acknowledged).length);
     } catch (e) {}
   }
