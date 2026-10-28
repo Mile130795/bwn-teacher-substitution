@@ -877,6 +877,22 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
 .lx-sg.good b { background:var(--ok-bg); color:var(--ok); } .lx-sg.mid b { background:var(--warn-bg); color:var(--warn); } .lx-sg.low b { background:var(--bad-bg); color:var(--bad); }
 .lx-sg.on { border-color:var(--gold); background:var(--tint-2); box-shadow:0 0 0 2px var(--tint); }
 
+/* ── คู่มือวิธีใช้ ── */
+.gd-link { all:unset; cursor:pointer; display:block; margin:16px auto 0; text-align:center; font-size:13.5px; color:var(--gold-hi,#b88a2a); text-decoration:underline; text-underline-offset:3px; font-family:inherit; }
+.gd-side { width:100%; justify-content:center; margin-bottom:6px; background:rgba(255,255,255,.07) !important; color:rgba(255,255,255,.7) !important; border:1px solid rgba(255,255,255,.1) !important; }
+#lx-guide { position:fixed; inset:0; z-index:9500; background:var(--overlay,rgba(10,16,32,.55)); display:flex; align-items:center; justify-content:center; padding:16px; }
+#lx-guide .gd-box { width:min(560px,100%); max-height:88vh; overflow:auto; background:var(--modal-bg,#fff); color:var(--text-1,#1a2233); border:1px solid var(--line,#e5e7eb); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow-md,0 20px 50px rgba(0,0,0,.25)); animation:modalIn .4s var(--ease,ease) both; }
+.gd-h { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; } .gd-h h3 { margin:0; font-size:18px; }
+.gd-x { all:unset; cursor:pointer; width:30px; height:30px; text-align:center; line-height:30px; border-radius:50%; color:var(--text-2); } .gd-x:hover { background:var(--tint); }
+.gd-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.gd-tabs button { all:unset; cursor:pointer; padding:6px 12px; border-radius:99px; font-size:12.5px; border:1px solid var(--line); color:var(--text-2); font-family:inherit; }
+.gd-tabs button.on { background:var(--btn-pri-bg); color:var(--btn-pri-fg); border-color:transparent; font-weight:600; }
+.gd-list { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
+.gd-list li { display:flex; gap:12px; align-items:flex-start; }
+.gd-n { flex:0 0 24px; height:24px; border-radius:50%; background:var(--tint-2); color:var(--gold-hi); font-size:12px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.gd-list b { font-size:14px; } .gd-list p { margin:2px 0 0; font-size:13px; line-height:1.6; color:var(--text-2); }
+.gd-foot { margin:16px 0 0; font-size:12px; color:var(--text-3); text-align:center; }
+
 </style>
 </head>
 <body>
@@ -908,6 +924,7 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
       <p style="color:rgba(255,255,255,.65);font-size:14px;margin:0;line-height:1.7;">"จัดการสอนแทนได้ง่าย รวดเร็ว<br>และโปร่งใส ทุกวัน ทุกคาบ"</p>
     </div>
     <!-- Stats row -->
+    <div style="display:none">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1;">
       <div style="background:rgba(255,255,255,.12);border-radius:14px;padding:16px 18px;backdrop-filter:blur(4px);">
         <p id="stat-teacher-count" style="color:#fff;font-size:22px;font-weight:700;margin:0;">—</p>
@@ -917,6 +934,7 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
         <p id="stat-month-subs" style="color:#fff;font-size:22px;font-weight:700;margin:0;">—</p>
         <p style="color:rgba(255,255,255,.6);font-size:12px;margin:0;margin-top:2px;">คาบสอนแทน/เดือน</p>
       </div>
+    </div>
     </div>
   </div>
 
@@ -978,7 +996,6 @@ body[data-page="swap-approve"] #swap-tab-find { display:none !important; }
       <div id="nav-public">
         <p class="nav-label">หน้าหลัก</p>
         <div class="nav-item active" data-nav="dash" onclick="App.navTo('dash')"><span class="nav-icon" data-ic="grid"></span><span class="nav-text">หน้าแรก</span></div>
-        <div class="nav-item" data-nav="home" onclick="App.navTo('home')"><span class="nav-icon" data-ic="calday"></span><span class="nav-text">สอนแทนรายวัน</span></div>
       </div>
       <div id="nav-manage" data-roles="dept school" style="display:none;">
         <p class="nav-label" id="nav-manage-label">งานจัดสอนแทน</p>
@@ -1533,16 +1550,7 @@ const App = {
       return r;
     });
     if (t && this.state.uid) { this.goHome(); this._initSessionTimeout(); }
-    else this.goPubHome();  // ← loadHome() เริ่มทำงานที่นี่ (parallel กับ _settingsReady)
-    // โหลด public stats สำหรับหน้า login (ไม่ต้อง token)
-    this.api({ action:'getPublicStats' }).then(ps => {
-      if (ps.ok) {
-        const tc = document.getElementById('stat-teacher-count');
-        const ms = document.getElementById('stat-month-subs');
-        if (tc) tc.textContent = ps.teacherCount;
-        if (ms) ms.textContent = ps.monthSubCount;
-      }
-    });
+    else { this.clearSession(); this.goLogin(); }   // ต้องล็อกอินก่อนเสมอ
     const r = await this._settingsReady;
     if (!r.ok) { if (!cached) this.toast('ไม่สามารถเชื่อมต่อ GAS: ' + r.err, 'error'); return; }
     this.applySettings();
@@ -1633,8 +1641,8 @@ const App = {
 
   goLogin() {
     document.getElementById('page-login').style.display = 'flex';
-    // แสดงปุ่มปิด (X) เฉพาะเมื่อ dashboard โหลดอยู่แล้ว
-    const hasDash = document.getElementById('page-dashboard').classList.contains('active');
+    document.getElementById('page-dashboard').classList.remove('active');
+    const hasDash = false;
     if (localStorage.getItem('sidebarCollapsed') === '1') document.getElementById('sidebar').classList.add('collapsed');
     const closeBtn = document.getElementById('btn-close-login');
     if (closeBtn) closeBtn.style.display = hasDash ? 'flex' : 'none';
@@ -1672,6 +1680,7 @@ const App = {
   },
 
   navTo(navId) {
+    if (!this.state.token && navId !== 'dash') navId = 'dash';   // ผู้เยี่ยมชมเห็นเฉพาะแดชบอร์ดภาพรวม
     if (window.innerWidth < 768) this.closeSidebar();
     document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.nav === navId));
     const panelMap = { dash:'panel-dash', home:'panel-home', 'user-ack':'panel-user-ack', 'user-stats':'panel-user-stats', 'admin-assign':'panel-admin-assign', 'admin-ack':'panel-admin-ack', 'admin-stats':'panel-admin-stats', 'admin-overall':'panel-admin-overall', 'admin-schedule':'panel-admin-schedule', 'admin-teachers':'panel-admin-teachers', 'swap':'panel-swap', 'admin-tools':'panel-admin-tools', 'admin-audit':'panel-admin-audit' };
@@ -1786,7 +1795,7 @@ const App = {
     if (modal) modal.style.display = 'none';
     this.clearSession();
     this.setupNav();
-    this.goPubHome();
+    this.goLogin();
     this.toast(msg || 'ออกจากระบบแล้ว', 'info');
   },
 
@@ -4294,7 +4303,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.8 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 6.9 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
@@ -5177,6 +5186,62 @@ window.addEventListener('DOMContentLoaded', () => {
     const hd = document.getElementById('home-date'); if (hd) hd.addEventListener('change', () => hd.value && App.loadHome(hd.value));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+
+/* ── คู่มือวิธีใช้ (เปิดได้ทั้งหน้าล็อกอินและในเมนู) ── */
+(function () {
+  const G = {
+    teacher: ['ครูทั่วไป', [
+      ['เข้าสู่ระบบ', 'ใช้ชื่อผู้ใช้ (รหัสครู เช่น T201) และรหัสผ่านที่ผู้ดูแลให้ ครั้งแรกระบบจะให้เปลี่ยนรหัสผ่านใหม่'],
+      ['ดูการสอนแทน', 'หน้าแรกแสดงภาพรวม เมนู "สอนแทนรายวัน" ดูรายการวันนี้หรือเลือกวันอื่นด้วยปุ่มลูกศร/ปฏิทิน'],
+      ['รับทราบ', 'เมื่อมีคาบสอนแทนใหม่ จะขึ้นแจ้งในเมนู "รับทราบ" กดรับทราบเพื่อยืนยันว่าเห็นแล้ว'],
+      ['สถิติของฉัน', 'ดูจำนวนคาบที่สอนแทนและประวัติ กรองตามภาคเรียน ปีการศึกษา หรือทั้งหมดได้'],
+      ['แลกคาบ', 'เลือกวัน คาบ และครูที่จะแลก ระบบตรวจคาบชนและอาคารให้ แล้วส่งคำขอ รอครูอีกฝ่ายรับ และผู้ดูแลอนุมัติ']
+    ]],
+    dept: ['หัวหน้ากลุ่มสาระ (DeptAdmin)', [
+      ['จัดสอนแทน', 'เลือกวันที่ → ครูที่ไม่อยู่ → สาเหตุ ระบบดึงคาบสอนมาให้ ปุ่ม "จัดอัตโนมัติ" ช่วยเลือกครูที่เหมาะสม หรือกดเลือกจากรายชื่อที่ระบบแนะนำ ตรวจแล้วกด "วิเคราะห์และบันทึก"'],
+      ['บันทึกการลาอย่างเดียว', 'ติ๊กช่องนี้เมื่อครูลาแต่ไม่ต้องจัดสอนแทน (เช่นแลกคาบไว้แล้ว) รายการจะไม่ขึ้นในตารางสอนแทนรายวัน'],
+      ['แก้ไข/ยกเลิก', 'ในรายการที่จัดแล้วกดแก้ไขเพื่อเปลี่ยนครูหรือยกเลิกเป็นรายคาบ รายครู หรือทั้งวัน ทุกการแก้ไขบันทึกในประวัติ'],
+      ['ส่งออก', 'ปุ่มส่งออกสร้างรูป PDF หรือข้อความสำหรับคัดลอกไปแจ้งใน LINE กลุ่ม'],
+      ['สถิติกลุ่มสาระ', 'ดูภาระสอนแทนรายครูและรายสาเหตุ ส่งออกเป็นรายงาน A4 ได้ ชื่อหัวหน้ากลุ่มสาระตั้งในเมนูตั้งค่า'],
+      ['ขอบเขตสิทธิ์', 'เห็นและจัดการได้เฉพาะครูในกลุ่มสาระของตนเอง']
+    ]],
+    admin: ['ผู้ดูแลโรงเรียน (Admin)', [
+      ['จัดการครูและบัญชี', 'เพิ่ม/แก้ไขครู กำหนดบทบาท รีเซ็ตรหัสผ่าน เปิด/ปิดบัญชี (ดูรหัสเดิมไม่ได้ เก็บเป็นแฮชเท่านั้น)'],
+      ['นำเข้าตารางสอน', 'นำเข้าจากไฟล์ CSV/Excel ตรวจความถูกต้องก่อนบันทึก'],
+      ['ตั้งค่า', 'ปีการศึกษา ภาคเรียน ชื่อหัวหน้ากลุ่มสาระทุกกลุ่ม และชื่อผู้อำนวยการ (ใช้ในรายงานสถิติ)'],
+      ['ภาพรวมและรายงาน', 'สถิติทั้งโรงเรียน แยกตามกลุ่มสาระ ครู และสาเหตุ'],
+      ['ประวัติการแก้ไข', 'Audit Log ตรวจย้อนหลังได้ว่าใคร ทำอะไร เมื่อไร ข้อมูลเดิม/ใหม่'],
+      ['สำรองข้อมูล', 'ก่อนปรับระบบสำคัญ ให้คัดลอกไฟล์ Google Sheet เก็บไว้ทุกครั้ง']
+    ]]
+  };
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function body(k) { return G[k][1].map((x, i) => `<li><span class="gd-n">${i + 1}</span><div><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div></li>`).join(''); }
+  App.openGuide = function (k) {
+    k = k || (this.state.role === 'admin' ? ((this.state.level || 'school') === 'dept' ? 'dept' : 'admin') : 'teacher');
+    let o = document.getElementById('lx-guide'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'lx-guide';
+    o.innerHTML = `<div class="gd-box" role="dialog" aria-label="คู่มือวิธีใช้"><div class="gd-h"><h3>คู่มือวิธีใช้</h3><button type="button" class="gd-x" aria-label="ปิด">✕</button></div>
+      <div class="gd-tabs">${Object.keys(G).map(t => `<button type="button" data-k="${t}" class="${t === k ? 'on' : ''}">${esc(G[t][0])}</button>`).join('')}</div>
+      <ol class="gd-list">${body(k)}</ol><p class="gd-foot">มีปัญหาในการใช้งาน แจ้งผู้ดูแลระบบของกลุ่มสาระได้เลย</p></div>`;
+    document.body.appendChild(o);
+    const close = () => o.remove();
+    o.addEventListener('click', e => { if (e.target === o || e.target.closest('.gd-x')) close(); const b = e.target.closest('.gd-tabs button'); if (b) { o.querySelectorAll('.gd-tabs button').forEach(x => x.classList.toggle('on', x === b)); o.querySelector('.gd-list').innerHTML = body(b.dataset.k); } });
+    document.addEventListener('keydown', function f(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', f); } });
+  };
+  function mount() {
+    const form = document.querySelector('#page-login form');
+    if (form && !document.getElementById('lx-guide-link')) {
+      const a = document.createElement('button'); a.type = 'button'; a.id = 'lx-guide-link'; a.className = 'gd-link'; a.textContent = 'คู่มือวิธีใช้ระบบ';
+      a.onclick = () => App.openGuide('teacher'); form.appendChild(a);
+    }
+    const lo = document.getElementById('btn-logout');
+    if (lo && !document.getElementById('btn-guide')) {
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'btn-guide'; b.className = 'btn btn-sm gd-side'; b.textContent = 'คู่มือวิธีใช้';
+      b.onclick = () => App.openGuide(); lo.parentNode.insertBefore(b, lo);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', mount); mount();
 })();
 
 </script>
