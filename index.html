@@ -5399,7 +5399,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'left'; ctx.fillStyle = '#fffdf8'; ctx.font = F(700, 58); ctx.fillText('คำขอแลกคาบ', M, 82);
     ctx.textAlign = 'right'; ctx.fillStyle = '#f0dfb2'; fit(ctx, d.school, 430, 32, 400, 24); ctx.fillText(d.school, W - M, 78);
 
-    const BW = (W - 2 * M - 56) / 2, BY = 136, BH = 306;
+    const BW = (W - 2 * M - 56) / 2, BY = 136, BH = 308;
     const block = (x, no, title, leg) => {
       rr(ctx, x, BY, BW, BH, 22); ctx.fillStyle = SOFT; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = LINE; ctx.stroke();
       ctx.beginPath(); ctx.arc(x + 34, BY + 38, 22, 0, 7); ctx.fillStyle = NAVY; ctx.fill();
@@ -5414,23 +5414,21 @@ window.addEventListener('DOMContentLoaded', () => {
       while (ctx.measureText(rm).width + (sj ? 150 : 0) > tw && rs > 28) { rs -= 2; ctx.font = F(700, rs); }
       ctx.fillStyle = GOLD_HI; ctx.fillText(rm, x + 16, BY + 206);
       if (sj) { const w0 = ctx.measureText(rm).width; ctx.fillStyle = MUTE; ctx.font = F(400, 30); ctx.fillText(sj, x + 16 + w0, BY + 206); }
-      rr(ctx, x + 12, BY + 226, BW - 24, 62, 16); ctx.fillStyle = '#fffdf8'; ctx.fill(); ctx.strokeStyle = LINE; ctx.stroke();
-      ctx.fillStyle = INK; ctx.textAlign = 'center';
-      const fl = `${leg.from} → ${leg.to}`; fit(ctx, fl, BW - 64, 32, 700, 20); ctx.fillText(fl, x + BW / 2, BY + 266);
+      rr(ctx, x + 12, BY + 224, BW - 24, 70, 16); ctx.fillStyle = NAVY; ctx.fill();
+      ctx.textAlign = 'center';
+      const t1 = `ครูที่เข้าสอน: ${leg.to}`; ctx.fillStyle = '#ffffff'; fit(ctx, t1, BW - 56, 38, 700, 22); ctx.fillText(t1, x + BW / 2, BY + 270);
     };
     block(M, '1', 'คาบที่ขอแลก', d.a);
     ctx.textAlign = 'center'; ctx.fillStyle = GOLD; ctx.font = F(700, 40); ctx.fillText('⇄', W / 2, BY + BH / 2 + 12);
     block(W - M - BW, '2', 'คาบที่ไปสอนคืน', d.b);
 
     // ท้ายการ์ด
-    let y = 484; ctx.textAlign = 'left';
+    let y = 490; ctx.textAlign = 'left';
     ctx.fillStyle = INK; ctx.font = F(400, 30);
-    const memo = d.reason ? 'เหตุผล: ' + d.reason : '';
     ctx.fillStyle = INK; ctx.font = F(700, 34);
-    const ft = 'ผู้ขอ: ' + d.a.from; fit(ctx, ft, W - 2 * M, 34, 700, 24); ctx.fillText(ft, M, y); y += 46; let last = y - 46;
+    const ft = 'ผู้ขอ: ' + d.a.from; fit(ctx, ft, W - 2 * M, 34, 700, 24); ctx.fillText(ft, M, y); y += 66; let last = y - 66;
     ctx.fillStyle = MUTE; ctx.font = F(400, 28);
-    const dt = 'วันที่ออกการ์ด ' + d.today; fit(ctx, dt, W - 2 * M, 28, 400, 20); ctx.fillText(dt, M, y); last = y; y += 44;
-    if (memo) { ctx.fillStyle = INK; ctx.font = F(400, 30); wrap(ctx, memo, W - 2 * M, 2).forEach(l => { ctx.fillText(l, M, y); last = y; y += 38; }); }
+    const dt = 'วันที่ออกการ์ด ' + d.today; fit(ctx, dt, W - 2 * M, 28, 400, 20); ctx.fillText(dt, M, y); last = y;
     // ตัดความสูงการ์ดให้พอดีเนื้อหา
     const hf = Math.min(760, Math.round(last + 34)), out = document.createElement('canvas'); out.width = W; out.height = hf;
     out.getContext('2d').drawImage(cv, 0, 0); return out;
