@@ -3497,7 +3497,7 @@ const App = {
               <span style="font-size:12px;color:var(--text-2);"> ${this.esc(o.teacherId)}${o.department?' · '+this.esc(o.department):''}</span>
               ${o.sameDept===true?'<span class="badge badge-ack" style="margin-left:4px;">กลุ่มสาระเดียวกัน</span>':o.sameDept===false?'<span class="badge badge-info" style="margin-left:4px;">ต่างกลุ่มสาระ</span>':''}</div>
             <span class="score-pill" title="${o.score} คะแนน">${o.grade ? this.esc(o.grade) : o.score + ' คะแนน'}</span>
-            ${o.needOverride?'<span class="badge badge-pending" style="margin-left:4px;">ต้องขอ Admin อนุญาต</span>':''}
+            ${o.needOverride && !o.grade ? '<span class="badge badge-pending" style="margin-left:4px;">ต้องขอ Admin อนุญาต</span>' : ''}
           </div>
           <div style="margin:4px 0 2px;"><button type="button" class="btn btn-secondary btn-sm" style="padding:2px 10px;font-size:12px;" onclick="App.swapToggle(${pi},${oi})">${(sel.open||{})[oi] ? 'ซ่อนเหตุผล ▴' : 'ดูเหตุผล ▾'}</button></div>
           ${(sel.open||{})[oi] ? `<div style="font-size:12px;color:var(--text-2);margin:5px 0;line-height:1.7;"><b>คะแนน ${o.score}</b> (ใช้เรียงลำดับ ไม่ใช่เปอร์เซ็นต์)<br>${o.reasons.map(x => '• '+this.esc(x)).join('<br>')}</div>` : ''}
