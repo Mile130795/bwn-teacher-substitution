@@ -3437,7 +3437,7 @@ const App = {
         ${this.statBox('ต้องส่งกลุ่มสาระ', s.needSubstitute||0, '#fee2e2', 'var(--danger)')}
         ${this.statBox('มีผู้สอนแล้ว', s.covered||0, '#f1f5f9', 'var(--text-2)')}
       </div>
-      ${r.dataNote ? `<p style="margin:10px 0 0;font-size:12.5px;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">ℹ️ ${this.esc(r.dataNote)}</p>` : ''}
+      ${r.dataNote ? `<details style="margin:10px 0 0;font-size:12.5px;color:#475569;"><summary style="cursor:pointer;">ℹ️ ข้อมูลที่ระบบมี</summary><p style="margin:6px 0 0;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">${this.esc(r.dataNote)}</p></details>` : ''}
       ${r.note ? `<p style="margin:10px 0 0;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;">⚠️ ${this.esc(r.note)}</p>` : ''}
     </div>`;
 
@@ -3449,7 +3449,7 @@ const App = {
       let mid = '', ret = '—', act = '';
       if (pl.mode === 'swap') {
         mid = `<b style="color:var(--success);">แลกกับ ${this.esc(pl.fullName)}</b>`;
-        ret = `${this.esc(pl.returnDay)} คาบ ${pl.returnPeriod} · ${this.esc(pl.returnRoom||'')}${pl.returnOnLeaveDay?' <span class="badge badge-warn">ตรงวันลา</span>':''}`;
+        ret = `${this.esc(pl.returnDay)} คาบ ${pl.returnPeriod} · ${this.esc(pl.returnRoom||'')}${pl.returnOnLeaveDay?' <span class="badge badge-warn">ตรงกับวันที่ลา</span>':''}`;
         act = `<button onclick="App.usePlan(${pl.period})" class="btn btn-primary btn-sm">เลือกตามแผน</button>`;
       } else if (pl.mode === 'covered') {
         mid = `<span class="badge badge-ack">มีผู้สอนแล้ว</span>`;
@@ -3485,8 +3485,8 @@ const App = {
         ${this.state.role==='admin'?`<button onclick="App.goAssignFor('${r.date}','${this.esc(r.teacherId)}')" class="btn btn-outline btn-sm" style="margin-top:8px;">📝 ไปจัดสอนแทน</button>`:''}
       </div>`;
     } else {
-      const opts = p.options.slice(0, sel.showAll ? 50 : 4);
-      inner = `<div style="margin-top:10px;">` + `<div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">วิเคราะห์แล้ว: ในกลุ่มสาระ <b>${p.inDeptCount||0}</b> คน · กลุ่มสาระอื่น <b>${p.otherDeptCount||0}</b> คน (เรียงกลุ่มสาระตนเองก่อน)</div>` + opts.map((o, oi) => {
+      const opts = p.options.slice(0, sel.showAll ? 50 : 3);
+      inner = `<div style="margin-top:10px;">` + `<details style="font-size:12px;color:var(--text-2);margin-bottom:6px;"><summary style="cursor:pointer;">พบคู่แลก ${p.optionCount||p.options.length} คน (กดดูรายละเอียด)</summary>วิเคราะห์แล้ว: ในกลุ่มสาระ <b>${p.inDeptCount||0}</b> คน · กลุ่มสาระอื่น <b>${p.otherDeptCount||0}</b> คน (เรียงกลุ่มสาระตนเองก่อน)</details>` + opts.map((o, oi) => {
         const isSel = sel.oi === oi;
         const rets = o.returns.map((x, ri) =>
           `<button class="ret-chip ${isSel && sel.ri === ri ? 'sel' : ''} ${x.onLeaveDay?'leave':''}" onclick="App.pickSwap(${pi},${oi},${ri})" title="${x.onLeaveDay?'ตรงกับวันที่คุณลา':''}">
@@ -3496,14 +3496,15 @@ const App = {
             <div><b style="font-size:14px;">${this.esc(o.fullName)}</b>
               <span style="font-size:12px;color:var(--text-2);"> ${this.esc(o.teacherId)}${o.department?' · '+this.esc(o.department):''}</span>
               ${o.sameDept===true?'<span class="badge badge-ack" style="margin-left:4px;">กลุ่มสาระเดียวกัน</span>':o.sameDept===false?'<span class="badge badge-info" style="margin-left:4px;">ต่างกลุ่มสาระ</span>':''}</div>
-            <span class="score-pill">${o.score} คะแนน</span>
-            ${o.needOverride?'<span class="badge badge-pending" style="margin-left:4px;">ต้องให้ Admin อนุมัติข้าม</span>':''}
+            <span class="score-pill" title="${o.score} คะแนน">${o.grade ? this.esc(o.grade) : o.score + ' คะแนน'}</span>
+            ${o.needOverride?'<span class="badge badge-pending" style="margin-left:4px;">ต้องขอ Admin อนุญาต</span>':''}
           </div>
-          <div style="font-size:12px;color:var(--text-2);margin:5px 0;">${o.reasons.map(x => '• '+this.esc(x)).join('  ')}</div>
+          <div style="margin:4px 0 2px;"><button type="button" class="btn btn-secondary btn-sm" style="padding:2px 10px;font-size:12px;" onclick="App.swapToggle(${pi},${oi})">${(sel.open||{})[oi] ? 'ซ่อนเหตุผล ▴' : 'ดูเหตุผล ▾'}</button></div>
+          ${(sel.open||{})[oi] ? `<div style="font-size:12px;color:var(--text-2);margin:5px 0;line-height:1.7;"><b>คะแนน ${o.score}</b> (ใช้เรียงลำดับ ไม่ใช่เปอร์เซ็นต์)<br>${o.reasons.map(x => '• '+this.esc(x)).join('<br>')}</div>` : ''}
           <div style="font-size:12px;font-weight:700;color:var(--text-2);">เลือกคาบที่คุณจะไปสอนคืน:</div>
           <div>${rets}</div>
         </div>`;
-      }).join('') + (p.options.length > 4 && !sel.showAll ? `<button onclick="App.swapShowAll(${pi})" class="btn btn-secondary btn-sm">ดูทั้งหมด ${p.options.length} คน</button>` : '')
+      }).join('') + (p.options.length > 3 && !sel.showAll ? `<button onclick="App.swapShowAll(${pi})" class="btn btn-secondary btn-sm">ดูทั้งหมด ${p.options.length} คน</button>` : '')
         + (sel.oi !== undefined ? `<div style="margin-top:8px;"><button onclick="App.openSwapCheck(${pi})" class="btn btn-primary">ตรวจสอบและส่งคำขอ →</button></div>` : '')
         + `</div>`;
     }
@@ -3511,10 +3512,11 @@ const App = {
   },
 
   rerenderSwapPeriod(pi) { const el = document.getElementById('swap-period-'+pi); if (el) el.innerHTML = this.swapPeriodHtml(pi); },
+  swapToggle(pi, oi) { const sel = (this._swap.sel[pi] = this._swap.sel[pi] || {}); sel.open = sel.open || {}; sel.open[oi] = !sel.open[oi]; this.rerenderSwapPeriod(pi); },
   swapShowAll(pi) { (this._swap.sel[pi] = this._swap.sel[pi] || {}).showAll = true; this.rerenderSwapPeriod(pi); },
   pickSwap(pi, oi, ri) {
     const prev = this._swap.sel[pi] || {};
-    this._swap.sel[pi] = { oi, ri, showAll: prev.showAll };
+    this._swap.sel[pi] = { oi, ri, showAll: prev.showAll, open: prev.open };
     this.rerenderSwapPeriod(pi);
   },
   usePlan(period) {
@@ -3523,7 +3525,7 @@ const App = {
     const oi = r.periods[pi].options.findIndex(o => o.teacherId === pl.teacherId);
     if (oi < 0) return;
     const ri = r.periods[pi].options[oi].returns.findIndex(x => x.day === pl.returnDay && x.period === pl.returnPeriod);
-    this._swap.sel[pi] = { oi, ri: Math.max(0, ri), showAll: oi >= 4 };
+    this._swap.sel[pi] = { oi, ri: Math.max(0, ri), showAll: oi >= 3 };
     this.rerenderSwapPeriod(pi);
     this.openSwapCheck(pi);
   },
@@ -3568,7 +3570,7 @@ const App = {
     if (!r.ok) { el.innerHTML = `<p style="color:var(--danger);font-weight:600;">${this.esc(r.err)}</p>`; return; }
     this._swap.chk = r;
     const isAdmin = this.state.role === 'admin';
-    const OVR = { meFree:'ข้ามเงื่อนไข: ผมว่างในคาบที่ไปสอนคืน', otherFree:'ข้ามเงื่อนไข: คู่แลกว่างในคาบนี้', meNotAbsentReturn:'ข้ามเงื่อนไข: ผมอยู่ปฏิบัติงานวันที่คืน' };
+    const OVR = { meFree:'อนุญาต: ผู้ขอไม่ว่างในคาบที่ไปสอนคืน', otherFree:'อนุญาต: คู่แลกไม่ว่างในคาบนี้', meNotAbsentReturn:'อนุญาต: ผู้ขอไม่อยู่ในวันที่คืนคาบ' };
     const failedOvr = r.checks.filter(x => !x.pass && OVR[x.key]);
     const failedHard = r.checks.filter(x => !x.pass && !OVR[x.key]);
     let html = r.checks.map(x => `<div class="chk-row"><span>${x.pass?'✅':'❌'}</span><span style="color:${x.pass?'var(--text-1)':'#991b1b'};font-weight:${x.pass?400:600};">${this.esc(x.msg)}</span></div>`).join('');
@@ -3585,7 +3587,7 @@ const App = {
       if (failedHard.length || !isAdmin) html += `<p style="margin:0 0 8px;font-size:12.5px;color:var(--text-2);">${this.esc(r.advice||'ให้ส่งต่อกลุ่มสาระจัดครูสอนแทน')}</p>`;
       if (isAdmin && failedOvr.length && !failedHard.length) {
         html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: ข้ามเงื่อนไขได้ (ต้องระบุเหตุผล)</p>
+          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: อนุญาตกรณีพิเศษได้ (ต้องระบุเหตุผล)</p>
           ${failedOvr.map(x => `<label style="display:flex;gap:6px;font-size:12.5px;margin-bottom:4px;"><input type="checkbox" class="swap-ovr" value="${x.key}" onchange="App.swapOvrChanged()"> ${OVR[x.key]}</label>`).join('')}
           <input id="swap-ovr-reason" class="form-input" style="margin-top:6px;" placeholder="เหตุผล เช่น นักเรียนไปทำกิจกรรมคณะสี" oninput="App.swapOvrChanged()"></div>`;
       }
@@ -4370,7 +4372,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!r.ok) { el.innerHTML = `<p style="color:var(--danger);font-weight:600;">${this.esc(r.err)}</p>`; return; }
     this._swap.chk = r;
     const isAdmin = this.state.role === 'admin';
-    const OVR = { meFree: 'ข้ามเงื่อนไข: ผมว่างในคาบที่ไปสอนคืน', otherFree: 'ข้ามเงื่อนไข: คู่แลกว่างในคาบนี้', meNotAbsentReturn: 'ข้ามเงื่อนไข: ผมอยู่ปฏิบัติงานวันที่คืน' };
+    const OVR = { meFree: 'อนุญาต: ผู้ขอไม่ว่างในคาบที่ไปสอนคืน', otherFree: 'อนุญาต: คู่แลกไม่ว่างในคาบนี้', meNotAbsentReturn: 'อนุญาต: ผู้ขอไม่อยู่ในวันที่คืนคาบ' };
     const failed = r.checks.filter(x => !x.pass), passed = r.checks.filter(x => x.pass);
     const failedOvr = failed.filter(x => OVR[x.key]);
     const failedHard = failed.filter(x => !OVR[x.key]);
@@ -4402,14 +4404,15 @@ window.addEventListener('DOMContentLoaded', () => {
       if (failedHard.length || !isAdmin) html += `<p style="margin:10px 0 8px;font-size:12.5px;color:var(--text-2);">${this.esc(r.advice || 'ให้ส่งต่อกลุ่มสาระจัดครูสอนแทน')}</p>`;
       if (isAdmin && failedOvr.length && !failedHard.length) {
         html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin:10px 0 8px;">
-          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: ข้ามเงื่อนไขได้ (ต้องระบุเหตุผล)</p>
+          <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;color:#92400e;">Admin: อนุญาตกรณีพิเศษได้ (ต้องระบุเหตุผล)</p>
           ${failedOvr.map(x => `<label style="display:flex;gap:6px;font-size:12.5px;margin-bottom:4px;"><input type="checkbox" class="swap-ovr" value="${x.key}" onchange="App.swapOvrChanged()"> ${OVR[x.key]}</label>`).join('')}
           <input id="swap-ovr-reason" class="form-input" style="margin-top:6px;" placeholder="เหตุผล เช่น นักเรียนไปทำกิจกรรมคณะสี" oninput="App.swapOvrChanged()"></div>`;
       }
       canSend = false;
     }
-    html += `<label class="form-label" style="margin-top:10px;">หมายเหตุ (ถ้ามี)</label><input id="swap-note" class="form-input" style="margin-bottom:10px;">`;
-    if (isAdmin) html += `<label style="display:flex;gap:6px;font-size:13px;margin-bottom:10px;"><input type="checkbox" id="swap-agreed"> คู่แลกตกลงกันแล้ว — บันทึกและอนุมัติทันที</label>`;
+    html += `<details style="margin:10px 0;"><summary style="cursor:pointer;font-size:13px;color:var(--text-2);">${isAdmin ? 'ตัวเลือกเพิ่มเติม (หมายเหตุ / สำหรับ Admin)' : 'เพิ่มหมายเหตุ'}</summary>
+      <label class="form-label" style="margin-top:8px;">หมายเหตุ (ถ้ามี)</label><input id="swap-note" class="form-input" style="margin-bottom:10px;">
+      ${isAdmin ? `<label style="display:flex;gap:6px;font-size:13px;margin-bottom:4px;"><input type="checkbox" id="swap-agreed"> คู่แลกตกลงกันแล้ว — บันทึกและอนุมัติทันที</label>` : ''}</details>`;
     html += `<div style="display:flex;gap:8px;"><button id="swap-send-btn" onclick="App.submitSwap()" class="btn btn-primary" ${canSend ? '' : 'disabled'}>📨 ${isAdmin ? 'บันทึก/ส่งคำขอ' : 'ส่งคำขอแลกคาบ'}</button>
       <button onclick="App.closeSwapModal()" class="btn btn-secondary">ปิด</button></div>`;
     el.innerHTML = html;
@@ -5380,59 +5383,52 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function draw(d) {
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = 760;
+    // การ์ดแนวตั้ง 4 ซม. กว้าง (630 px ที่ 400 dpi) สูงตามเนื้อหา
+    const W = 630, M = 28, CH = 1000;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = CH;
     const ctx = cv.getContext('2d'); ctx.textBaseline = 'alphabetic';
-    // สีตามธีมระบบ (โหมดสว่าง: กรมท่า + ทองแชมเปญ บนครีม)
-    const NAVY = '#14203d', GOLD = '#a8843f', GOLD_HI = '#755720', INK = '#1f2937', MUTE = '#6b7280', SOFT = 'rgba(255,253,248,.9)', LINE = 'rgba(150,118,58,.32)';
-    ctx.fillStyle = '#f5f2ea'; ctx.fillRect(0, 0, W, 760);
-    pattern(ctx, W, 760, 118, false);
-    ornaments(ctx, W, 548, 118);
+    const NAVY = '#14203d', GOLD = '#a8843f', GOLD_HI = '#755720', INK = '#1f2937', MUTE = '#6b7280', SOFT = 'rgba(255,253,248,.92)', LINE = 'rgba(150,118,58,.32)';
+    ctx.fillStyle = '#f5f2ea'; ctx.fillRect(0, 0, W, CH);
+    pattern(ctx, W, CH, 138, false);
+    ornaments(ctx, W, 840, 138);
     // หัวการ์ด
-    const hg = ctx.createLinearGradient(0, 0, W, 112); hg.addColorStop(0, '#1f2f5a'); hg.addColorStop(1, '#0f1a35');
-    ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 112);
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 112); ctx.clip(); pattern(ctx, W, 112, 0, true);
+    const HH = 132;
+    const hg = ctx.createLinearGradient(0, 0, W, HH); hg.addColorStop(0, '#1f2f5a'); hg.addColorStop(1, '#0f1a35');
+    ctx.fillStyle = hg; ctx.fillRect(0, 0, W, HH);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, HH); ctx.clip(); pattern(ctx, W, HH, 0, true);
     ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,185,126,.28)';
-    [[W - 70, 56, 92, 6, .2], [W - 70, 56, 58, 6, .2 + Math.PI / 6]].forEach(p => { poly(ctx, p[0], p[1], p[2], p[3], p[4]); ctx.stroke(); });
+    [[W - 50, 50, 92, 6, .2], [W - 50, 50, 58, 6, .2 + Math.PI / 6]].forEach(p => { poly(ctx, p[0], p[1], p[2], p[3], p[4]); ctx.stroke(); });
     ctx.restore();
     const sg = ctx.createLinearGradient(0, 0, W, 0); sg.addColorStop(0, '#c9a866'); sg.addColorStop(.5, '#e8d7b0'); sg.addColorStop(1, '#a8843f');
-    ctx.fillStyle = sg; ctx.fillRect(0, 112, W, 6);
-    ctx.textAlign = 'left'; ctx.fillStyle = '#fffdf8'; ctx.font = F(700, 58); ctx.fillText('คำขอแลกคาบ', M, 82);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#f0dfb2'; fit(ctx, d.school, 430, 32, 400, 24); ctx.fillText(d.school, W - M, 78);
+    ctx.fillStyle = sg; ctx.fillRect(0, HH, W, 6);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fffdf8'; ctx.font = F(700, 56); ctx.fillText('คำขอแลกคาบ', M, 78);
+    ctx.fillStyle = '#f0dfb2'; fit(ctx, d.school, W - 2 * M, 30, 400, 22); ctx.fillText(d.school, M, 116);
 
-    const BW = (W - 2 * M - 56) / 2, BY = 136, BH = 308;
-    const block = (x, no, title, leg) => {
-      rr(ctx, x, BY, BW, BH, 22); ctx.fillStyle = SOFT; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = LINE; ctx.stroke();
-      ctx.beginPath(); ctx.arc(x + 34, BY + 38, 22, 0, 7); ctx.fillStyle = NAVY; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = F(700, 28); ctx.textAlign = 'center'; ctx.fillText(no, x + 34, BY + 49);
-      ctx.textAlign = 'left'; ctx.fillStyle = GOLD; ctx.font = F(700, 32); ctx.fillText(title, x + 68, BY + 50);
-      const tw = BW - 32;
-      ctx.fillStyle = INK; fit(ctx, leg.date, tw, 34, 700, 26); ctx.fillText(leg.date, x + 16, BY + 96);
-      ctx.fillStyle = NAVY; const t2 = `คาบ ${leg.period}` + (leg.time ? `  ·  ${leg.time}` : '');
-      fit(ctx, t2, tw, 42, 700, 28); ctx.fillText(t2, x + 16, BY + 146);
-      const rm = `ห้อง ${leg.room || '-'}`, sj = leg.subj ? `  ·  ${leg.subj}` : '';
-      let rs = 44; ctx.font = F(700, rs);
-      while (ctx.measureText(rm).width + (sj ? 150 : 0) > tw && rs > 28) { rs -= 2; ctx.font = F(700, rs); }
-      ctx.fillStyle = GOLD_HI; ctx.fillText(rm, x + 16, BY + 206);
-      if (sj) { const w0 = ctx.measureText(rm).width; ctx.fillStyle = MUTE; ctx.font = F(400, 30); ctx.fillText(sj, x + 16 + w0, BY + 206); }
-      rr(ctx, x + 12, BY + 224, BW - 24, 70, 16); ctx.fillStyle = NAVY; ctx.fill();
-      ctx.textAlign = 'center';
-      const t1 = `ครูที่เข้าสอน: ${leg.to}`; ctx.fillStyle = '#ffffff'; fit(ctx, t1, BW - 56, 38, 700, 22); ctx.fillText(t1, x + BW / 2, BY + 270);
+    const BW = W - 2 * M, BH = 286;
+    const block = (by, no, title, leg) => {
+      const x = M;
+      rr(ctx, x, by, BW, BH, 22); ctx.fillStyle = SOFT; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = LINE; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + 36, by + 38, 22, 0, 7); ctx.fillStyle = NAVY; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = F(700, 28); ctx.textAlign = 'center'; ctx.fillText(no, x + 36, by + 49);
+      ctx.textAlign = 'left'; ctx.fillStyle = GOLD; ctx.font = F(700, 34); ctx.fillText(title, x + 70, by + 50);
+      ctx.textAlign = 'left'; ctx.fillStyle = INK; fit(ctx, leg.date, BW - 36, 42, 700, 24); ctx.fillText(leg.date, x + 18, by + 118);
+      ctx.fillStyle = INK; ctx.font = F(700, 42); ctx.fillText(`คาบ ${leg.period}`, x + 18, by + 178);
+      rr(ctx, x + 14, by + 202, BW - 28, 66, 16); ctx.fillStyle = NAVY; ctx.fill();
+      ctx.textAlign = 'center'; const t1 = `ครู${String(leg.to).trim().split(/\s+/)[0]} เข้าสอน`; ctx.fillStyle = '#ffffff'; fit(ctx, t1, BW - 60, 42, 700, 20); ctx.fillText(t1, x + BW / 2, by + 248);
     };
-    block(M, '1', 'คาบที่ขอแลก', d.a);
-    ctx.textAlign = 'center'; ctx.fillStyle = GOLD; ctx.font = F(700, 40); ctx.fillText('⇄', W / 2, BY + BH / 2 + 12);
-    block(W - M - BW, '2', 'คาบที่ไปสอนคืน', d.b);
+    const B1 = 160, B2 = B1 + BH + 52;
+    block(B1, '1', 'คาบที่ขอแลก', d.a);
+    ctx.textAlign = 'center'; ctx.fillStyle = GOLD; ctx.font = F(700, 44); ctx.fillText('⇅', W / 2, B1 + BH + 38);
+    block(B2, '2', 'คาบที่ไปสอนคืน', d.b);
 
     // ท้ายการ์ด
-    let y = 490; ctx.textAlign = 'left';
-    ctx.fillStyle = INK; ctx.font = F(400, 30);
+    let y = B2 + BH + 56; ctx.textAlign = 'left';
     ctx.fillStyle = INK; ctx.font = F(700, 34);
-    const ft = 'ผู้ขอ: ' + d.a.from; fit(ctx, ft, W - 2 * M, 34, 700, 24); ctx.fillText(ft, M, y); y += 66; let last = y - 66;
-    ctx.fillStyle = MUTE; ctx.font = F(400, 28);
-    const dt = 'วันที่ออกการ์ด ' + d.today; fit(ctx, dt, W - 2 * M, 28, 400, 20); ctx.fillText(dt, M, y); last = y;
-    // ตัดความสูงการ์ดให้พอดีเนื้อหา
-    const hf = Math.min(760, Math.round(last + 34)), out = document.createElement('canvas'); out.width = W; out.height = hf;
+    const ft = 'ผู้ขอ: ' + d.a.from; fit(ctx, ft, W - 2 * M, 34, 700, 22); ctx.fillText(ft, M, y);
+    y += 64; ctx.fillStyle = MUTE; ctx.font = F(400, 28);
+    const dt = 'วันที่ออกการ์ด ' + d.today; fit(ctx, dt, W - 2 * M, 28, 400, 20); ctx.fillText(dt, M, y);
+    const hf = Math.min(CH, Math.round(y + 34)), out = document.createElement('canvas'); out.width = W; out.height = hf;
     out.getContext('2d').drawImage(cv, 0, 0); return out;
-    return cv;
   }
 
   App.exportSwapCard = async function () {
