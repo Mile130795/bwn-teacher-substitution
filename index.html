@@ -4311,7 +4311,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ป้ายเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) */
 (function () {
   const sb = document.getElementById('sidebar'); if (!sb) return;
-  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.3 · Luxe'; sb.appendChild(v);
+  const v = document.createElement('div'); v.className = 'app-ver'; v.textContent = 'เวอร์ชัน 7.4 · Luxe'; sb.appendChild(v);
 })();
 
 /* ── บันทึกภาพ/PDF: ไม่ใช้ window.open เลย (ถูกบล็อกใน LINE, iOS, และเว็บที่เพิ่มไว้หน้าจอโฮม) ── */
@@ -5252,6 +5252,181 @@ window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('DOMContentLoaded', mount); mount();
 })();
 
+
+/* ── ป้ายบอกตารางสอน/ตารางเรียนที่ใช้ (มุมล่างหน้าแรก) ── */
+(function () {
+  const css = document.createElement('style');
+  css.textContent = '#sched-info{display:none;flex-shrink:0;margin-left:auto;align-items:center;font-size:12px;line-height:1.3;color:var(--text-2);background:var(--btn-sec-bg);border:1px solid var(--line);border-radius:999px;padding:6px 13px;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}#header-actions + #sched-info,#sched-info ~ .lx-theme{margin-left:6px}body:has(#panel-home.active) #sched-info:not(:empty){display:inline-flex}#home-body{padding-bottom:12px}@media(max-width:900px){#sched-info .si-pre{display:none}}@media(max-width:560px){#sched-info{font-size:11px;padding:5px 9px}}';
+  document.head.appendChild(css);
+  const MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const cache = {};
+  const thShort = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? `${+m[3]} ${MON[+m[2] - 1]} ${+m[1] + 543}` : ''; };
+  const label = r => {
+    if (!r || !r.ok || !r.version) return '';
+    const n = String(r.version).replace(/\D/g, '') || r.version;
+    const eff = thShort(r.effectiveDate);
+    return `<span class="si-pre">ใช้ข้อมูลตารางเรียน-ตารางสอน&nbsp;</span>ฉบับที่ ${n}` + (eff ? ` : ${eff}` : '');
+  };
+  App.renderSchedInfo = async function (date) {
+    const panel = document.getElementById('panel-home'); if (!panel || !this.state.token) return;
+    let el = document.getElementById('sched-info');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'sched-info';
+      const hdr = document.querySelector('#page-dashboard header'), th = hdr && hdr.querySelector('.lx-theme');
+      if (hdr && th) hdr.insertBefore(el, th); else if (hdr) hdr.appendChild(el); else panel.appendChild(el);
+    }
+    const d = date || this._homeDate || (typeof todayStr === 'function' ? todayStr() : '');
+    if (cache[d]) { el.innerHTML = label(cache[d]); return; }
+    try {
+      const r = await this.api({ action: 'getScheduleInfo', date: d });
+      if (r && r.ok) cache[d] = r;
+      el.innerHTML = label(r);
+    } catch (e) { el.innerHTML = ''; }
+  };
+  const lh = App.loadHome;
+  App.loadHome = function () { const p = lh.apply(this, arguments); Promise.resolve(p).then(() => this.renderSchedInfo(this._homeDate)).catch(() => {}); return p; };
+})();
+
+/* ── การ์ดแจ้งขอแลกคาบ ขนาด 6×4 ซม. แนวนอน (ส่งออกเป็นภาพ PNG 400 dpi) ── */
+(function () {
+  const W = 945, H = 630, M = 32, DPI = 400;            // 6×4 ซม. (แนวนอน) ที่ 400 dpi
+  const FF = "'TH Sarabun New','Sarabun',sans-serif", K = 1.1;   // ฟอนต์เดียวกับเอกสารส่งออก (TH Sarabun New ตัวเล็ก จึงขยายขนาดชดเชย)
+  const F = (w, s) => `${w} ${Math.round(s * K)}px ${FF}`;
+  const MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const short = n => String(n || '').replace(/^(นางสาว|นาย|นาง|ว่าที่\s*ร\.ต\.|Mr\.|Ms\.)\s*/, '').trim();
+  const thDate = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); if (!m) return String(s || '-'); const d = new Date(+m[1], +m[2] - 1, +m[3]); return `วัน${DAYS[d.getDay()]}ที่ ${+m[3]} ${MON[+m[2] - 1]} ${+m[1] + 543}`; };
+  const inPage = (() => { const ua = navigator.userAgent; return /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(ua) || /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; })();
+
+  const crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  /* ใส่ค่า dpi ในไฟล์ PNG เพื่อให้พิมพ์ออกมาได้ 6×4 ซม. พอดี */
+  function withDpi(bytes) {
+    const ppm = Math.round(DPI / 0.0254), body = new Uint8Array(13);
+    body.set([0x70, 0x48, 0x59, 0x73]);                                   // 'pHYs'
+    const dv = new DataView(body.buffer); dv.setUint32(4, ppm); dv.setUint32(8, ppm); body[12] = 1;
+    const chunk = new Uint8Array(21), cv = new DataView(chunk.buffer);
+    cv.setUint32(0, 9); chunk.set(body, 4); cv.setUint32(17, crc(body));
+    const out = new Uint8Array(bytes.length + 21);
+    out.set(bytes.subarray(0, 33)); out.set(chunk, 33); out.set(bytes.subarray(33), 54);
+    return out;
+  }
+
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function fit(ctx, text, maxW, size, weight, min) {
+    let s = size; ctx.font = F(weight, s);
+    while (ctx.measureText(text).width > maxW && s > (min || 26)) { s -= 2; ctx.font = F(weight, s); }
+    return s;
+  }
+  function wrap(ctx, text, maxW, maxLines) {
+    const words = String(text || '').split(/\s+/), lines = []; let cur = '';
+    const chars = s => Array.from(s);
+    words.forEach(w => {
+      const t = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(t).width <= maxW) { cur = t; return; }
+      if (cur) lines.push(cur);
+      cur = '';
+      let buf = '';
+      chars(w).forEach(ch => { if (ctx.measureText(buf + ch).width > maxW) { lines.push(buf); buf = ch; } else buf += ch; });
+      cur = buf;
+    });
+    if (cur) lines.push(cur);
+    if (lines.length > maxLines) { lines.length = maxLines; lines[maxLines - 1] = lines[maxLines - 1].replace(/.{0,2}$/, '…'); }
+    return lines;
+  }
+
+  function draw(d) {
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = 760;
+    const ctx = cv.getContext('2d'); ctx.textBaseline = 'alphabetic';
+    const NAVY = '#14213d', GOLD = '#b08d57', INK = '#1f2937', MUTE = '#6b7280', SOFT = '#f6f1e6';
+    ctx.fillStyle = '#fffdf8'; ctx.fillRect(0, 0, W, 760);
+    // หัวการ์ด
+    ctx.fillStyle = NAVY; ctx.fillRect(0, 0, W, 112);
+    ctx.fillStyle = GOLD; ctx.fillRect(0, 112, W, 6);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = F(700, 58); ctx.fillText('คำขอแลกคาบ', M, 82);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#e8d7b0'; fit(ctx, d.school, 430, 32, 400, 24); ctx.fillText(d.school, W - M, 78);
+
+    const BW = (W - 2 * M - 56) / 2, BY = 136, BH = 306;
+    const block = (x, no, title, leg) => {
+      rr(ctx, x, BY, BW, BH, 22); ctx.fillStyle = SOFT; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#e4d9bf'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + 34, BY + 38, 22, 0, 7); ctx.fillStyle = NAVY; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = F(700, 28); ctx.textAlign = 'center'; ctx.fillText(no, x + 34, BY + 49);
+      ctx.textAlign = 'left'; ctx.fillStyle = GOLD; ctx.font = F(700, 32); ctx.fillText(title, x + 68, BY + 50);
+      const tw = BW - 32;
+      ctx.fillStyle = INK; fit(ctx, leg.date, tw, 34, 700, 26); ctx.fillText(leg.date, x + 16, BY + 96);
+      ctx.fillStyle = NAVY; const t2 = `คาบ ${leg.period}` + (leg.time ? `  ·  ${leg.time}` : '');
+      fit(ctx, t2, tw, 42, 700, 28); ctx.fillText(t2, x + 16, BY + 146);
+      const rm = `ห้อง ${leg.room || '-'}`, sj = leg.subj ? `  ·  ${leg.subj}` : '';
+      let rs = 44; ctx.font = F(700, rs);
+      while (ctx.measureText(rm).width + (sj ? 150 : 0) > tw && rs > 28) { rs -= 2; ctx.font = F(700, rs); }
+      ctx.fillStyle = '#7a5a1e'; ctx.fillText(rm, x + 16, BY + 206);
+      if (sj) { const w0 = ctx.measureText(rm).width; ctx.fillStyle = MUTE; ctx.font = F(400, 30); ctx.fillText(sj, x + 16 + w0, BY + 206); }
+      rr(ctx, x + 12, BY + 226, BW - 24, 62, 16); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#e4d9bf'; ctx.stroke();
+      ctx.fillStyle = INK; ctx.textAlign = 'center';
+      const fl = `${leg.from} → ${leg.to}`; fit(ctx, fl, BW - 64, 32, 700, 20); ctx.fillText(fl, x + BW / 2, BY + 266);
+    };
+    block(M, '1', 'คาบที่ขอแลก', d.a);
+    ctx.textAlign = 'center'; ctx.fillStyle = GOLD; ctx.font = F(700, 40); ctx.fillText('⇄', W / 2, BY + BH / 2 + 12);
+    block(W - M - BW, '2', 'คาบที่ไปสอนคืน', d.b);
+
+    // ท้ายการ์ด
+    let y = 484; ctx.textAlign = 'left';
+    ctx.fillStyle = INK; ctx.font = F(400, 30);
+    const memo = d.reason ? 'เหตุผล: ' + d.reason : '';
+    ctx.fillStyle = INK; ctx.font = F(700, 34);
+    const ft = 'ผู้ขอ: ' + d.a.from; fit(ctx, ft, W - 2 * M, 34, 700, 24); ctx.fillText(ft, M, y); y += 46; let last = y - 46;
+    ctx.fillStyle = MUTE; ctx.font = F(400, 28);
+    const dt = 'วันที่ออกการ์ด ' + d.today; fit(ctx, dt, W - 2 * M, 28, 400, 20); ctx.fillText(dt, M, y); last = y; y += 44;
+    if (memo) { ctx.fillStyle = INK; ctx.font = F(400, 30); wrap(ctx, memo, W - 2 * M, 2).forEach(l => { ctx.fillText(l, M, y); last = y; y += 38; }); }
+    // ตัดความสูงการ์ดให้พอดีเนื้อหา
+    const hf = Math.min(760, Math.round(last + 34)), out = document.createElement('canvas'); out.width = W; out.height = hf;
+    out.getContext('2d').drawImage(cv, 0, 0); return out;
+    return cv;
+  }
+
+  App.exportSwapCard = async function () {
+    const c = this._swap && this._swap.ctx, chk = this._swap && this._swap.chk;
+    if (!c || !c.otherId || !c.retPeriod) { this.toast('เลือกคู่แลก วัน และคาบที่จะคืนก่อน', 'error'); return; }
+    const dd = this._swap.data, p = dd && dd.periods && dd.periods[c.pi]; if (!p) { this.toast('ไม่พบข้อมูลคาบ', 'error'); return; }
+    const o = (p.options || []).find(x => x.teacherId === c.otherId) || {};
+    const ret = (o.returns || []).find(x => x.day === c.retDay && x.period === c.retPeriod) || {};
+    const me = short(dd.teacherName), ot = short(c.otherName || o.fullName);
+    const now = new Date(), today = `${now.getDate()} ${MON[now.getMonth()]} ${now.getFullYear() + 543}`;
+    const data = {
+      school: (this.state.settings && this.state.settings.schoolName) || 'โรงเรียนบุญวัฒนา',
+      a: { date: thDate(c.date), period: p.period, time: p.timeRange, room: p.room, subj: p.subjectCode, from: me, to: ot },
+      b: { date: c.retDate ? thDate(c.retDate) : `วัน${c.retDay}`, period: c.retPeriod, time: ret.timeRange, room: ret.room, subj: ret.subjectCode, from: ot, to: me },
+      reason: (document.getElementById('swap-reason') || {}).value || '', note: ((document.getElementById('swap-note') || {}).value || '').trim(),
+      valid: !!(chk && chk.valid), today
+    };
+    try { await Promise.all([document.fonts.load(F(700,40)), document.fonts.load(F(400,40))]); } catch (e) {}
+    const cv = draw(data); this._lastCard = cv;
+    const name = `ขอแลกคาบ_${me}_${c.date}.png`;
+    if (inPage) { this._saveCanvas(cv, name); return; }
+    cv.toBlob(async b => {
+      if (!b) { this.toast('สร้างภาพไม่สำเร็จ', 'error'); return; }
+      const bytes = withDpi(new Uint8Array(await b.arrayBuffer()));
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+      const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      this.toast('บันทึกการ์ด 6×4 ซม. แล้ว', 'success');
+    }, 'image/png');
+  };
+
+  const rc0 = App.swapRecheck;
+  App.swapRecheck = async function () {
+    const r = await rc0.apply(this, arguments);
+    try {
+      const c = this._swap && this._swap.ctx, send = document.getElementById('swap-send-btn');
+      if (c && c.retPeriod && send && !document.getElementById('swap-card-btn')) {
+        const b = document.createElement('button'); b.id = 'swap-card-btn'; b.type = 'button'; b.className = 'btn btn-outline';
+        b.textContent = '🖼 การ์ด 6×4 ซม.'; b.title = 'บันทึกภาพการ์ดแจ้งขอแลกคาบ ขนาด 6×4 ซม. แนวนอน'; b.onclick = () => App.exportSwapCard();
+        send.parentNode.insertBefore(b, send.nextSibling);
+      }
+    } catch (e) {}
+    return r;
+  };
+})();
 </script>
 <!-- Session Timeout Warning Modal -->
 <div id="session-warn-modal" style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
